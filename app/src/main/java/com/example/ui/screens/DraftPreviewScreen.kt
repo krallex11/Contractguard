@@ -104,7 +104,7 @@ fun DraftPreviewScreen(
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
-    var webHostBaseUrl by remember { mutableStateOf("https://contractmaker22.vercel.app") }
+    var webHostBaseUrl by remember { mutableStateOf("https://contractguard-git-main-asas-5ed0.vercel.app") }
 
     var showDomainDialog by remember { mutableStateOf(false) }
     var tempDomainInput by remember { mutableStateOf(webHostBaseUrl) }
