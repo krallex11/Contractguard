@@ -27,6 +27,70 @@
     <!-- SignaturePad & html2pdf Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- PDF Document Styling Override -->
+    <style>
+        .pdf-mode {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: none !important;
+            padding: 24px !important;
+            border-radius: 8px !important;
+        }
+        .pdf-mode * {
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        .pdf-mode #docTypeBadge {
+            background-color: #f0fdf4 !important;
+            color: #166534 !important;
+            border-color: #bbf7d0 !important;
+        }
+        .pdf-mode #docTitle {
+            color: #0f172a !important;
+        }
+        .pdf-mode .bg-darkBg, 
+        .pdf-mode .bg-darkBg\/80, 
+        .pdf-mode .bg-darkCard\/90,
+        .pdf-mode #partyASigContainer,
+        .pdf-mode #partyBSigStatus {
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        .pdf-mode #contractText {
+            background-color: #f8fafc !important;
+            color: #1e293b !important;
+            border-color: #cbd5e1 !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        .pdf-mode #partyAName,
+        .pdf-mode #partyANameFinal {
+            color: #0f172a !important;
+        }
+        .pdf-mode #partyBName,
+        .pdf-mode #partyBNameFinal {
+            color: #15803d !important;
+        }
+        .pdf-mode .text-textMuted {
+            color: #475569 !important;
+        }
+        .pdf-mode #completedHash, 
+        .pdf-mode #completedTime {
+            color: #166534 !important;
+        }
+        .pdf-mode .text-emerald-400 {
+            color: #166534 !important;
+        }
+        .pdf-mode .text-amber-400 {
+            color: #d97706 !important;
+        }
+        .pdf-mode .text-accentGreen {
+            color: #15803d !important;
+        }
+    </style>
 </head>
 <body class="bg-darkBg text-slate-100 min-h-screen flex flex-col font-sans antialiased p-4 sm:p-6">
 
@@ -331,7 +395,8 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             const origMaxHeight = contractText.style.maxHeight;
             const origOverflow = contractText.style.overflow;
 
-            // Expand full text for PDF rendering
+            // Apply light printable document styling for PDF capture
+            element.classList.add('pdf-mode');
             contractText.style.maxHeight = 'none';
             contractText.style.overflow = 'visible';
 
@@ -339,11 +404,12 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                 margin:       [0.3, 0.3, 0.3, 0.3],
                 filename:     `Sozlesme_${decodeURIComponent(title).replace(/[^a-zA-Z0-9]/g, '_')}_Imzali.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#131B2E', logging: false },
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
             function restoreStyles() {
+                element.classList.remove('pdf-mode');
                 contractText.style.maxHeight = origMaxHeight;
                 contractText.style.overflow = origOverflow;
             }

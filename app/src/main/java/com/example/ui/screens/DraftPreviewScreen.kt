@@ -104,7 +104,7 @@ fun DraftPreviewScreen(
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
-    var webHostBaseUrl by remember { mutableStateOf("https://contractguard-git-main-asas-5ed0.vercel.app") }
+    var webHostBaseUrl by remember { mutableStateOf("https://contractguard.vercel.app") }
 
     var showDomainDialog by remember { mutableStateOf(false) }
     var tempDomainInput by remember { mutableStateOf(webHostBaseUrl) }
@@ -763,7 +763,7 @@ fun DraftPreviewScreen(
             text = {
                 Column {
                     Text(
-                        text = "Vercel, GitHub Pages veya kendi sunucu adresinizi girin:",
+                        text = "Vercel üretim alan adınızı (örn: https://contractguard.vercel.app veya https://contractmaker22.vercel.app) giriniz.\n\nNot: '-git-main-' içeren preview linkleri Vercel koruması nedeniyle giriş sayfasına yönlendirebilir.",
                         fontSize = 12.sp,
                         color = SleekTextMuted
                     )
