@@ -112,11 +112,12 @@ fun DraftPreviewScreen(
     val encodedTitle = remember(contract.title) { java.net.URLEncoder.encode(contract.title, "UTF-8") }
     val encodedPartyA = remember(contract.partyA) { java.net.URLEncoder.encode(contract.partyA, "UTF-8") }
     val encodedPartyB = remember(contract.partyB) { java.net.URLEncoder.encode(contract.partyB, "UTF-8") }
+    val encodedContent = remember(contract.generatedDraftText) { java.net.URLEncoder.encode(contract.generatedDraftText, "UTF-8") }
     val encodedSigA = remember(contract.signatureBase64) {
         if (!contract.signatureBase64.isNullOrEmpty()) java.net.URLEncoder.encode(contract.signatureBase64, "UTF-8") else ""
     }
 
-    val remoteSigningLink = "$webHostBaseUrl/?id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
+    val remoteSigningLink = "$webHostBaseUrl/?id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle&text=$encodedContent${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
     val hasUserSigned = !contract.signatureBase64.isNullOrEmpty() || contract.status == "SIGNED"
 
     Scaffold(
