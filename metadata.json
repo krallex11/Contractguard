@@ -1,0 +1,6 @@
+{
+  "name": "ContractGuard: Contract Maker",
+  "description": "Güvenli, e-imzalı, uçtan uca şifreli sözleşme oluşturma, PDF dışa aktarma ve e-posta paylaşım uygulaması.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

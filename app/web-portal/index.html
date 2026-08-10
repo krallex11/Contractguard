@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContractGuard - Uzaktan E-İmza Portalı</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090D16',
+                        darkCard: '#131B2E',
+                        darkBorder: '#1E293B',
+                        accentGreen: '#A3E635',
+                        accentGreenHover: '#84CC16',
+                        textMuted: '#94A3B8'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- SignaturePad & html2pdf Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen flex flex-col font-sans antialiased p-4 sm:p-6">
+
+    <!-- Header Navigation -->
+    <header class="max-w-3xl mx-auto w-full flex items-center justify-between pb-6 border-b border-darkBorder mb-6">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-accentGreen/10 border border-accentGreen/30 flex items-center justify-center text-accentGreen font-bold text-xl">
+                🛡️
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-white tracking-wide">ContractGuard Safesign</h1>
+                <p class="text-xs text-textMuted">Uzaktan E-İmza & Onay Portalı</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-1 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-xs font-semibold">
+            <span>🔒</span>
+            <span>256-bit SSL Güvenli Bağlantı</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-3xl mx-auto w-full space-y-6 flex-1">
+
+        <!-- Contract Details & PDF Export Card Container -->
+        <div id="printableContract" class="bg-darkCard border border-darkBorder rounded-2xl p-6 shadow-xl space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-darkBorder">
+                <span id="docTypeBadge" class="text-xs font-bold px-3 py-1 rounded-md bg-accentGreen/10 text-accentGreen border border-accentGreen/20">
+                    E-SÖZLEŞME BELGESİ
+                </span>
+                <span id="docId" class="text-xs font-mono text-textMuted">ID: #---</span>
+            </div>
+
+            <div>
+                <h2 id="docTitle" class="text-xl font-bold text-white mb-1">Resmi Sözleşme Taslağı</h2>
+                <p class="text-xs text-textMuted">Aşağıdaki sözleşme şartlarını inceleyip imzanızı ekleyebilirsiniz.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4 p-4 bg-darkBg/80 rounded-xl border border-darkBorder text-xs">
+                <div>
+                    <span class="text-textMuted block font-semibold mb-1">DÜZENLEYEN (TARAF A):</span>
+                    <strong id="partyAName" class="text-white text-sm block">--</strong>
+                    <div id="partyASigContainer" class="mt-2 p-2 bg-darkCard/90 rounded-lg border border-darkBorder flex items-center gap-2">
+                        <!-- Party A Signature Preview -->
+                        <div id="partyASigBox" class="flex items-center gap-2">
+                            <span class="text-emerald-400 text-base">✓</span>
+                            <span class="text-emerald-400 font-semibold text-xs">E-İmzalandı</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-textMuted block font-semibold mb-1">ALICI / İMZACI (TARAF B):</span>
+                    <strong id="partyBName" class="text-accentGreen text-sm block">--</strong>
+                    <div id="partyBSigStatus" class="mt-2 p-2 bg-darkCard/90 rounded-lg border border-darkBorder text-xs text-amber-400 font-semibold">
+                        ⏳ İmzanız Bekleniyor
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agreement Text Box -->
+            <div>
+                <label class="text-xs font-semibold text-textMuted uppercase tracking-wider block mb-2">Sözleşme Maddeleri & Şartlar:</label>
+                <div id="contractText" class="bg-darkBg border border-darkBorder rounded-xl p-4 text-xs font-mono text-slate-300 max-h-72 overflow-y-auto leading-relaxed whitespace-pre-wrap">
+Sözleşme yükleniyor...
+                </div>
+            </div>
+
+            <!-- Completed Dual Signature Block (Rendered after signing) -->
+            <div id="dualSignatureBlock" class="hidden pt-4 border-t border-darkBorder">
+                <h4 class="text-xs font-bold text-accentGreen uppercase tracking-wider mb-3">Taraf E-İmza Onay Mühürleri</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-3 bg-darkBg rounded-xl border border-darkBorder text-xs space-y-2">
+                        <div class="text-textMuted font-semibold">TARAF A (DÜZENLEYEN):</div>
+                        <div id="finalSigAImg" class="h-12 flex items-center">
+                            <span class="text-emerald-400 font-bold">✓ E-İmzalı</span>
+                        </div>
+                        <div id="partyANameFinal" class="text-white font-bold text-xs">--</div>
+                    </div>
+                    <div class="p-3 bg-darkBg rounded-xl border border-darkBorder text-xs space-y-2">
+                        <div class="text-textMuted font-semibold">TARAF B (ALICI):</div>
+                        <div id="finalSigBImg" class="h-12 flex items-center">
+                            <!-- B Signature Image inserted here -->
+                        </div>
+                        <div id="partyBNameFinal" class="text-accentGreen font-bold text-xs">--</div>
+                    </div>
+                </div>
+                <div class="mt-3 p-3 bg-darkBg rounded-xl border border-emerald-500/30 text-[11px] font-mono text-emerald-400 flex flex-wrap justify-between items-center gap-2">
+                    <span>Mühür Hash: <strong id="completedHash">--</strong></span>
+                    <span id="completedTime" class="text-textMuted">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signature Pad Form Module -->
+        <div id="signatureSection" class="bg-darkCard border border-darkBorder rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>✍️</span> Alıcı E-İmzası (Taraf B)
+                    </h3>
+                    <p class="text-xs text-textMuted">Lütfen aşağıdaki alana parmağınızla veya dokunmatik kalem ile imzanızı atın.</p>
+                </div>
+                <button id="clearBtn" class="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg transition">
+                    Temizle
+                </button>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full h-44 bg-darkBg border-2 border-dashed border-darkBorder rounded-xl overflow-hidden touch-none my-3">
+                <canvas id="signatureCanvas" class="w-full h-full cursor-crosshair"></canvas>
+                <div id="canvasPlaceholder" class="absolute inset-0 flex items-center justify-center pointer-events-none text-textMuted text-xs font-mono">
+                    İmzanızı Buraya Çizin
+                </div>
+            </div>
+
+            <!-- Legal Checkbox & Submit Button -->
+            <div class="mt-4 space-y-4">
+                <label class="flex items-start space-x-3 text-xs text-textMuted cursor-pointer">
+                    <input type="checkbox" id="legalAgreeCheck" class="mt-0.5 rounded border-darkBorder bg-darkBg text-accentGreen focus:ring-accentGreen">
+                    <span>
+                        Yukarıda belirtilen sözleşme maddelerini okudum, anladım ve elektronik imzam ile onaylayarak hukuken bağlayıcı olarak kabul ediyorum (5070 Sayılı Elektronik İmza Kanunu Uyarınca).
+                    </span>
+                </label>
+
+                <button id="submitBtn" disabled class="w-full py-3.5 bg-accentGreen text-slate-950 font-bold text-sm rounded-xl opacity-50 cursor-not-allowed transition duration-200 hover:bg-accentGreenHover shadow-lg shadow-accentGreen/10">
+                    Sözleşmeyi İmzala ve Onayla
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Card (Download, Share, Email) -->
+        <div id="successState" class="hidden bg-darkCard border border-emerald-500/40 rounded-2xl p-6 text-center space-y-5 shadow-2xl">
+            <div class="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto text-emerald-400 text-2xl font-bold">
+                ✓
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">E-İmzanız Başarıyla Atıldı!</h3>
+                <p class="text-xs text-textMuted max-w-md mx-auto mt-1">
+                    İmzalı sözleşme belgeniz hazırlandı. Aşağıdaki butonları kullanarak belgeyi cihazınıza indirebilir, paylaşabilir veya e-posta ile sözleşme sahibine iletebilirsiniz.
+                </p>
+            </div>
+
+            <!-- Action Buttons Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <button id="downloadPdfBtn" class="py-3 px-4 bg-accentGreen hover:bg-accentGreenHover text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-accentGreen/10">
+                    <span>📥</span>
+                    <span>PDF İndir</span>
+                </button>
+
+                <button id="sharePdfBtn" class="py-3 px-4 bg-darkBg hover:bg-darkBorder border border-accentGreen text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition">
+                    <span>📤</span>
+                    <span>PDF Paylaş</span>
+                </button>
+
+                <button id="emailPdfBtn" class="py-3 px-4 bg-darkBg hover:bg-darkBorder border border-darkBorder text-slate-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition">
+                    <span>✉️</span>
+                    <span>E-Posta İle Gönder</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-3xl mx-auto w-full text-center py-6 border-t border-darkBorder mt-8 text-xs text-textMuted">
+        &copy; ContractGuard Safesign • Tüm Hakları Saklıdır.
+    </footer>
+
+    <!-- Script Logic -->
+    <script>
+        // Parse Query Parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const contractId = urlParams.get('id') || 'SAMPLE-101';
+        const partyA = urlParams.get('partyA') || 'Sözleşme Düzenleyicisi';
+        const partyB = urlParams.get('partyB') || 'Alıcı / Müşteri';
+        const title = urlParams.get('title') || 'Uzaktan Hizmet ve Gizlilik Sözleşmesi';
+        const sigA = urlParams.get('sigA') || '';
+
+        // Populate Dynamic UI Elements
+        document.getElementById('docId').innerText = 'ID: #' + contractId;
+        document.getElementById('docTitle').innerText = decodeURIComponent(title);
+        document.getElementById('partyAName').innerText = decodeURIComponent(partyA);
+        document.getElementById('partyBName').innerText = decodeURIComponent(partyB);
+        document.getElementById('partyANameFinal').innerText = decodeURIComponent(partyA);
+        document.getElementById('partyBNameFinal').innerText = decodeURIComponent(partyB);
+
+        // Display Party A Signature if present
+        const partyASigBox = document.getElementById('partyASigBox');
+        const finalSigAImg = document.getElementById('finalSigAImg');
+        
+        if (sigA && sigA.trim().length > 10) {
+            let sigSrc = sigA.startsWith('data:') ? sigA : 'data:image/png;base64,' + sigA;
+            partyASigBox.innerHTML = `
+                <img src="${sigSrc}" class="h-10 object-contain max-w-[140px]" alt="Taraf A İmza" />
+                <span class="text-emerald-400 font-semibold text-[11px] block">✓ Taraf A İmzalı</span>
+            `;
+            finalSigAImg.innerHTML = `<img src="${sigSrc}" class="h-10 object-contain max-w-[140px]" alt="Taraf A İmza" />`;
+        } else {
+            partyASigBox.innerHTML = `
+                <span class="text-emerald-400 text-sm">✓</span>
+                <span class="text-emerald-400 font-semibold text-xs">Dijital Onaylı (Taraf A)</span>
+            `;
+        }
+
+        // Dummy text if not provided in URL
+        const sampleText = urlParams.get('text') ? decodeURIComponent(urlParams.get('text')) : 
+`1. TARAFLAR VE KONU
+İşbu sözleşme, Taraf A (${decodeURIComponent(partyA)}) ile Taraf B (${decodeURIComponent(partyB)}) arasında akdedilmiştir.
+
+2. YÜKÜMLÜLÜKLER
+Taraf B, kendisine sunulan hizmet ve koşulları eksiksiz kabul eder. Taraf A, gerekli tüm teknik ve hukuki desteği sağlamakla yükümlüdür.
+
+3. GİZLİLİK VE GÜVENLİK
+Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla paylaşmayacaktır.
+
+4. DİJİTAL ONAY
+İşbu belge, 5070 sayılı Elektronik İmza Kanunu kapsamında uzaktan elektronik imza yöntemiyle mühürlenmiştir.`;
+
+        document.getElementById('contractText').innerText = sampleText;
+
+        // Initialize Signature Pad
+        const canvas = document.getElementById('signatureCanvas');
+        const signaturePad = new SignaturePad(canvas, {
+            penColor: '#A3E635',
+            backgroundColor: 'rgba(0,0,0,0)'
+        });
+
+        // Handle Canvas Resize
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear();
+        }
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        const placeholder = document.getElementById('canvasPlaceholder');
+        const clearBtn = document.getElementById('clearBtn');
+        const agreeCheck = document.getElementById('legalAgreeCheck');
+        const submitBtn = document.getElementById('submitBtn');
+
+        signaturePad.addEventListener("beginStroke", () => {
+            placeholder.classList.add('hidden');
+            validateForm();
+        });
+
+        clearBtn.addEventListener("click", () => {
+            signaturePad.clear();
+            placeholder.classList.remove('hidden');
+            validateForm();
+        });
+
+        agreeCheck.addEventListener("change", validateForm);
+
+        function validateForm() {
+            const isValid = !signaturePad.isEmpty() && agreeCheck.checked;
+            submitBtn.disabled = !isValid;
+            if (isValid) {
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        let partyBSigDataUrl = '';
+
+        // Submit Action
+        submitBtn.addEventListener('click', () => {
+            if (signaturePad.isEmpty() || !agreeCheck.checked) return;
+
+            partyBSigDataUrl = signaturePad.toDataURL();
+            const timestamp = new Date().toLocaleString('tr-TR');
+            const fakeHash = 'SHA256-SEAL-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now();
+
+            // Update UI with B signature
+            document.getElementById('partyBSigStatus').className = 'mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 font-semibold flex items-center gap-2';
+            document.getElementById('partyBSigStatus').innerHTML = `
+                <img src="${partyBSigDataUrl}" class="h-8 object-contain max-w-[120px]" alt="Taraf B İmza" />
+                <span>✓ E-İmzalandı</span>
+            `;
+
+            document.getElementById('finalSigBImg').innerHTML = `<img src="${partyBSigDataUrl}" class="h-10 object-contain max-w-[140px]" alt="Taraf B İmza" />`;
+            document.getElementById('dualSignatureBlock').classList.remove('hidden');
+
+            document.getElementById('completedHash').innerText = fakeHash;
+            document.getElementById('completedTime').innerText = timestamp;
+
+            // Hide Signature Form, Show Success Card
+            document.getElementById('signatureSection').classList.add('hidden');
+            document.getElementById('successState').classList.remove('hidden');
+
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        });
+
+        // Robust PDF Export Engine
+        function handlePdfAction(action) {
+            const element = document.getElementById('printableContract');
+            const contractText = document.getElementById('contractText');
+
+            // Save original scroll / height styles
+            const origMaxHeight = contractText.style.maxHeight;
+            const origOverflow = contractText.style.overflow;
+
+            // Expand full text for PDF rendering
+            contractText.style.maxHeight = 'none';
+            contractText.style.overflow = 'visible';
+
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3],
+                filename:     `Sozlesme_${decodeURIComponent(title).replace(/[^a-zA-Z0-9]/g, '_')}_Imzali.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#131B2E', logging: false },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            function restoreStyles() {
+                contractText.style.maxHeight = origMaxHeight;
+                contractText.style.overflow = origOverflow;
+            }
+
+            if (typeof html2pdf !== 'undefined') {
+                const worker = html2pdf().set(opt).from(element);
+
+                if (action === 'download') {
+                    worker.save().then(() => {
+                        restoreStyles();
+                    }).catch(err => {
+                        console.error('PDF save error, fallback to print:', err);
+                        restoreStyles();
+                        window.print();
+                    });
+                } else if (action === 'share') {
+                    worker.output('blob').then(async (pdfBlob) => {
+                        restoreStyles();
+                        try {
+                            const file = new File([pdfBlob], `Sozlesme_${contractId}_Imzali.pdf`, { type: 'application/pdf' });
+                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                await navigator.share({
+                                    title: decodeURIComponent(title),
+                                    text: `ContractGuard e-imzalı sözleşme belgesi (${decodeURIComponent(title)}).`,
+                                    files: [file]
+                                });
+                            } else if (navigator.share) {
+                                await navigator.share({
+                                    title: decodeURIComponent(title),
+                                    text: `ContractGuard e-imzalı sözleşme belgesi (${decodeURIComponent(title)}).`,
+                                    url: window.location.href
+                                });
+                            } else {
+                                html2pdf().set(opt).from(element).save();
+                            }
+                        } catch (shareErr) {
+                            console.log('Share error, downloading instead:', shareErr);
+                            html2pdf().set(opt).from(element).save();
+                        }
+                    }).catch(err => {
+                        console.error('PDF worker blob error:', err);
+                        restoreStyles();
+                        window.print();
+                    });
+                }
+            } else {
+                restoreStyles();
+                window.print();
+            }
+        }
+
+        // PDF Download Button
+        document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+            handlePdfAction('download');
+        });
+
+        // PDF Share Button
+        document.getElementById('sharePdfBtn').addEventListener('click', () => {
+            handlePdfAction('share');
+        });
+
+        // Email PDF / Send to Party A
+        document.getElementById('emailPdfBtn').addEventListener('click', () => {
+            const subject = encodeURIComponent(`E-İmzalı Sözleşme Onayı: ${decodeURIComponent(title)}`);
+            const body = encodeURIComponent(
+                `Merhaba ${decodeURIComponent(partyA)},\n\n'${decodeURIComponent(title)}' sözleşmesi Taraf B (${decodeURIComponent(partyB)}) tarafından elektronik imza ile onaylanmıştır.\n\nİndirdiğim e-imzalı PDF dosyasını bu e-postaya ek olarak iletiyorum.\n\nSaygılarımla,\n${decodeURIComponent(partyB)}`
+            );
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        });
+    </script>
+</body>
+</html>
