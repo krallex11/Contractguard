@@ -24,8 +24,9 @@
         }
     </script>
     
-    <!-- SignaturePad & html2pdf Libraries -->
+    <!-- SignaturePad & jsPDF Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- Print & PDF Styling -->
@@ -38,12 +39,14 @@
             body > * {
                 display: none !important;
             }
-            #cleanPdfExportContainer {
+            #printableContract {
                 display: block !important;
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
                 width: 100% !important;
+                background: white !important;
+                color: black !important;
                 border: none !important;
                 box-shadow: none !important;
             }
@@ -246,13 +249,24 @@ Sözleşme yükleniyor...
             if (str.includes('%')) {
                 try { str = decodeURIComponent(str); } catch (e) {}
             }
-            // Replace spaces back to '+' for base64 image data
             str = str.replace(/ /g, '+');
             str = str.replace(/^["']|["']$/g, '');
             if (str && !str.startsWith('data:')) {
                 str = 'data:image/png;base64,' + str;
             }
             return str;
+        }
+
+        // Turkish character normalizer for jsPDF vector engine
+        function trForPdf(str) {
+            if (!str) return '';
+            return str
+                .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                .replace(/Ç/g, 'C').replace(/ç/g, 'c');
         }
 
         // Parse Query Parameters safely
@@ -408,201 +422,285 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
-        // Create a pristine light-mode document element specifically for PDF generation
-        function createCleanPdfElement() {
-            const docIdVal = document.getElementById('docId').innerText || 'ID: #101';
-            const docTitleVal = document.getElementById('docTitle').innerText || 'Sözleşme Metni';
-            const partyAVal = document.getElementById('partyAName').innerText || 'Taraf A';
-            const partyBVal = document.getElementById('partyBName').innerText || 'Taraf B';
-            const contractContentVal = document.getElementById('contractText').innerText || '';
-            const hashVal = document.getElementById('completedHash').innerText || 'OFFLINE-VERIFIED';
-            const timeStrVal = document.getElementById('completedTime').innerText || new Date().toLocaleString('tr-TR');
+        // KÖKTEN YENİ: Direct High-Resolution Vector PDF Generator Engine (jsPDF)
+        function generateVectorPdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
 
-            let sigAImgHtml = '';
-            if (sigA && sigA.trim().length > 20) {
-                sigAImgHtml = `<img src="${sigA}" style="max-height: 48px; max-width: 170px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto; background: white; padding: 2px; border-radius: 4px;" alt="Taraf A İmza" />`;
-            } else {
-                sigAImgHtml = `<span style="color:#166534; font-weight:700; font-size:12px;">✓ Dijital Onaylı (Taraf A)</span>`;
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 15;
+            const contentWidth = pageWidth - (margin * 2); // 180mm
+
+            let currentY = margin;
+
+            // Header Bar Accent
+            doc.setFillColor(22, 101, 52); // #166534
+            doc.rect(margin, currentY, contentWidth, 2, 'F');
+            currentY += 7;
+
+            // Brand Header
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.setTextColor(15, 23, 42); // #0f172a
+            doc.text(trForPdf('ContractGuard Safesign'), margin, currentY);
+
+            // Badge
+            doc.setFontSize(8.5);
+            doc.setTextColor(22, 101, 52);
+            doc.setFillColor(240, 253, 244);
+            doc.setDrawColor(187, 247, 208);
+            doc.roundedRect(pageWidth - margin - 38, currentY - 5, 38, 7, 1.5, 1.5, 'FD');
+            doc.text(trForPdf('V E-IMZA MUHURLU'), pageWidth - margin - 35, currentY);
+
+            currentY += 5;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(71, 85, 105);
+            doc.text(trForPdf('E-Imzali Resmi Sozlesme Belgesi'), margin, currentY);
+
+            const docIdVal = document.getElementById('docId')?.innerText || 'ID: #101';
+            doc.text(trForPdf(docIdVal), pageWidth - margin, currentY, { align: 'right' });
+
+            currentY += 6;
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.4);
+            doc.line(margin, currentY, pageWidth - margin, currentY);
+
+            currentY += 8;
+
+            // Document Title
+            const docTitleVal = document.getElementById('docTitle')?.innerText || 'Resmi Sozlesme Taslagi';
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.setTextColor(15, 23, 42);
+            doc.text(trForPdf(docTitleVal), margin, currentY);
+
+            currentY += 5;
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(trForPdf('Bu belge 5070 Sayili Elektronik Imza Kanunu uyarinca taraflarin e-imzalari ile muhurlenmistir.'), margin, currentY);
+
+            currentY += 7;
+
+            // Parties Box
+            const partyAVal = partyA || 'Taraf A';
+            const partyBVal = partyB || 'Taraf B';
+
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(203, 213, 225);
+            doc.roundedRect(margin, currentY, contentWidth, 22, 2.5, 2.5, 'FD');
+
+            // Party A
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text(trForPdf('DUZENLEYEN (TARAF A):'), margin + 5, currentY + 6);
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text(trForPdf(partyAVal), margin + 5, currentY + 12);
+            doc.setFontSize(8);
+            doc.setTextColor(22, 101, 52);
+            doc.text(trForPdf('V E-Imzalandi'), margin + 5, currentY + 17);
+
+            // Divider
+            doc.setDrawColor(203, 213, 225);
+            doc.line(margin + 90, currentY + 3, margin + 90, currentY + 19);
+
+            // Party B
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text(trForPdf('ALICI / IMZACI (TARAF B):'), margin + 95, currentY + 6);
+            doc.setFontSize(10);
+            doc.setTextColor(21, 128, 61);
+            doc.text(trForPdf(partyBVal), margin + 95, currentY + 12);
+            doc.setFontSize(8);
+            doc.setTextColor(22, 101, 52);
+            doc.text(trForPdf('V E-Imzalandi'), margin + 95, currentY + 17);
+
+            currentY += 28;
+
+            // Clauses Section
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(71, 85, 105);
+            doc.text(trForPdf('SOZLESME MADDELERI VE SARTLAR:'), margin, currentY);
+
+            currentY += 5;
+
+            const textContent = sampleText || '';
+            const pdfTextContent = trForPdf(textContent);
+            const splitLines = doc.splitTextToSize(pdfTextContent, contentWidth - 10);
+            const boxHeight = Math.max(30, (splitLines.length * 4.2) + 8);
+
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(203, 213, 225);
+            doc.roundedRect(margin, currentY, contentWidth, boxHeight, 2, 2, 'FD');
+
+            doc.setFont('courier', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(30, 41, 59);
+
+            let textY = currentY + 6;
+            for (let i = 0; i < splitLines.length; i++) {
+                if (textY > pageHeight - 40) {
+                    doc.addPage();
+                    textY = 20;
+                }
+                doc.text(splitLines[i], margin + 5, textY);
+                textY += 4.2;
             }
 
-            let sigBImgHtml = '';
+            currentY = Math.max(currentY + boxHeight + 8, textY + 8);
+
+            if (currentY > pageHeight - 65) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            // Signatures Section
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(22, 101, 52);
+            doc.text(trForPdf('TARAF E-IMZA MUHURLERI VE DIJITAL ONAYLAR:'), margin, currentY);
+
+            currentY += 5;
+
+            const cardWidth = (contentWidth - 6) / 2; // ~87mm
+            const cardHeight = 32;
+
+            // Card A
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(203, 213, 225);
+            doc.roundedRect(margin, currentY, cardWidth, cardHeight, 2, 2, 'FD');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text(trForPdf(`TARAF A IMZASI (${partyAVal}):`), margin + 4, currentY + 5);
+
+            if (sigA && sigA.length > 20) {
+                try {
+                    doc.addImage(sigA, 'PNG', margin + (cardWidth / 2) - 20, currentY + 7, 40, 22);
+                } catch (e) {
+                    doc.setFontSize(8);
+                    doc.setTextColor(22, 101, 52);
+                    doc.text(trForPdf('V Dijital Onayli (Taraf A)'), margin + 5, currentY + 18);
+                }
+            } else {
+                doc.setFontSize(8);
+                doc.setTextColor(22, 101, 52);
+                doc.text(trForPdf('V Dijital Onayli (Taraf A)'), margin + 5, currentY + 18);
+            }
+
+            // Card B
+            const cardBX = margin + cardWidth + 6;
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(203, 213, 225);
+            doc.roundedRect(cardBX, currentY, cardWidth, cardHeight, 2, 2, 'FD');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text(trForPdf(`TARAF B IMZASI (${partyBVal}):`), cardBX + 4, currentY + 5);
+
             if (partyBSigDataUrl && partyBSigDataUrl.length > 20) {
-                sigBImgHtml = `<img src="${partyBSigDataUrl}" style="max-height: 48px; max-width: 170px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto; background: white; padding: 2px; border-radius: 4px;" alt="Taraf B İmza" />`;
+                try {
+                    doc.addImage(partyBSigDataUrl, 'PNG', cardBX + (cardWidth / 2) - 20, currentY + 7, 40, 22);
+                } catch (e) {
+                    doc.setFontSize(8);
+                    doc.setTextColor(22, 101, 52);
+                    doc.text(trForPdf('V E-Imzalandi (Taraf B)'), cardBX + 5, currentY + 18);
+                }
             } else {
-                sigBImgHtml = `<span style="color:#166534; font-weight:700; font-size:12px;">✓ E-İmzalandı (Taraf B)</span>`;
+                doc.setFontSize(8);
+                doc.setTextColor(22, 101, 52);
+                doc.text(trForPdf('V E-Imzalandi (Taraf B)'), cardBX + 5, currentY + 18);
             }
 
-            const div = document.createElement('div');
-            div.id = 'cleanPdfExportContainer';
-            div.style.cssText = `
-                position: fixed;
-                left: 0;
-                top: 0;
-                width: 720px;
-                background-color: #ffffff !important;
-                background: #ffffff !important;
-                color: #0f172a !important;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                padding: 32px;
-                box-sizing: border-box;
-                z-index: 99999;
-                border: 1px solid #cbd5e1;
-                border-radius: 8px;
-            `;
+            currentY += cardHeight + 6;
 
-            div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #166534; padding-bottom: 14px; margin-bottom: 20px; background: #ffffff;">
-                    <div>
-                        <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">ContractGuard Safesign</h1>
-                        <p style="margin: 4px 0 0 0; font-size: 11px; color: #475569; font-weight: 600;">E-İmzalı Resmi Sözleşme Belgesi</p>
-                    </div>
-                    <div style="text-align: right; background: #ffffff;">
-                        <span style="display: inline-block; background-color: #f0fdf4; color: #166534; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px; border: 1px solid #bbf7d0;">
-                            ✓ E-İmza Mühürlü
-                        </span>
-                        <p style="margin: 6px 0 0 0; font-size: 11px; font-family: monospace; color: #64748b; font-weight: bold;">${docIdVal}</p>
-                    </div>
-                </div>
+            // Hash Box
+            const hashVal = document.getElementById('completedHash')?.innerText || 'SHA256-SEAL-OFFLINE';
+            const timeVal = document.getElementById('completedTime')?.innerText || new Date().toLocaleString('tr-TR');
 
-                <div style="margin-bottom: 20px; background: #ffffff;">
-                    <h2 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 700; color: #0f172a;">${docTitleVal}</h2>
-                    <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
-                        Bu belge 5070 Sayılı Elektronik İmza Kanunu kapsamında tarafların dijital e-imzaları ve doğrulama mühürleri ile resmiyet kazanmıştır.
-                    </p>
-                </div>
+            doc.setFillColor(240, 253, 244);
+            doc.setDrawColor(187, 247, 208);
+            doc.roundedRect(margin, currentY, contentWidth, 10, 2, 2, 'FD');
 
-                <div style="display: flex; gap: 16px; margin-bottom: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px;">
-                    <div style="flex: 1; border-right: 1px solid #cbd5e1; padding-right: 12px; background: transparent;">
-                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">DÜZENLEYEN (TARAF A):</span>
-                        <strong style="font-size: 13px; color: #0f172a; display: block; font-weight: 700;">${partyAVal}</strong>
-                        <div style="margin-top: 6px; font-size: 11px; color: #166534; font-weight: 700;">✓ E-İmzalandı</div>
-                    </div>
-                    <div style="flex: 1; padding-left: 4px; background: transparent;">
-                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">ALICI / İMZACI (TARAF B):</span>
-                        <strong style="font-size: 13px; color: #15803d; display: block; font-weight: 700;">${partyBVal}</strong>
-                        <div style="margin-top: 6px; font-size: 11px; color: #166534; font-weight: 700;">✓ E-İmzalandı</div>
-                    </div>
-                </div>
+            doc.setFont('courier', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(22, 101, 52);
+            doc.text(trForPdf(`Muhur Hash: ${hashVal}`), margin + 4, currentY + 6);
+            doc.text(trForPdf(`Zaman: ${timeVal}`), pageWidth - margin - 4, currentY + 6, { align: 'right' });
 
-                <div style="margin-bottom: 20px; background: #ffffff;">
-                    <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">SÖZLEŞME MADDELERİ & ŞARTLAR:</div>
-                    <div style="background-color: #ffffff; border: 1px solid #cbd5e1; padding: 16px; border-radius: 8px; font-size: 11px; font-family: 'Courier New', Courier, monospace; color: #1e293b; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${contractContentVal}</div>
-                </div>
+            // Footer
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            doc.text(trForPdf('ContractGuard Safesign • 5070 Sayili Elektronik Imza Kanunu Uyarinca Resmi Islak Imza Hukmundedir.'), pageWidth / 2, pageHeight - 10, { align: 'center' });
 
-                <div style="border-top: 2px solid #e2e8f0; padding-top: 18px; margin-top: 20px; background: #ffffff;">
-                    <h4 style="margin: 0 0 12px 0; font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">Taraf E-İmza Mühürleri & İmzalar</h4>
-                    <div style="display: flex; gap: 16px; margin-bottom: 16px;">
-                        <div style="flex: 1; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">TARAF A İMZASI (${partyAVal}):</div>
-                            <div style="height: 56px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px; overflow: hidden;">
-                                ${sigAImgHtml}
-                            </div>
-                        </div>
-                        <div style="flex: 1; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">TARAF B İMZASI (${partyBVal}):</div>
-                            <div style="height: 56px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px; overflow: hidden;">
-                                ${sigBImgHtml}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 8px; font-size: 10px; font-family: monospace; color: #166534; display: flex; justify-content: space-between; align-items: center;">
-                        <span>Mühür Hash (SHA-256): <strong style="color: #14532d;">${hashVal}</strong></span>
-                        <span>Zaman Damgası: <strong style="color: #14532d;">${timeStrVal}</strong></span>
-                    </div>
-                </div>
-            `;
-
-            return div;
+            return doc;
         }
 
-        // Robust PDF Export Engine
-        function handlePdfAction(action) {
-            const cleanDoc = createCleanPdfElement();
-            document.body.appendChild(cleanDoc);
+        // Action Handlers for Vector PDF Engine
+        function handlePdfDownload() {
+            try {
+                const doc = generateVectorPdf();
+                const cleanTitle = (title || 'E_Imzali_Sozlesme').replace(/[^a-zA-Z0-9]/g, '_');
+                doc.save(`Sozlesme_${cleanTitle}.pdf`);
+            } catch (err) {
+                console.error('Vector PDF save error, fallback to print:', err);
+                window.print();
+            }
+        }
 
+        async function handlePdfShare() {
             const cleanTitle = (title || 'E_Imzali_Sozlesme').replace(/[^a-zA-Z0-9]/g, '_');
             const safeFileName = `Sozlesme_${cleanTitle}.pdf`;
 
-            const opt = {
-                margin:       [0.3, 0.3, 0.3, 0.3],
-                filename:     safeFileName,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { 
-                    scale: 2, 
-                    useCORS: true, 
-                    backgroundColor: '#ffffff', 
-                    logging: false,
-                    scrollX: 0,
-                    scrollY: 0,
-                    windowWidth: 800
-                },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-            };
+            try {
+                const doc = generateVectorPdf();
+                const pdfBlob = doc.output('blob');
+                const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
 
-            function cleanup() {
-                if (cleanDoc && cleanDoc.parentNode) {
-                    cleanDoc.parentNode.removeChild(cleanDoc);
-                }
-            }
-
-            setTimeout(() => {
-                if (typeof html2pdf !== 'undefined') {
-                    if (action === 'download') {
-                        html2pdf().set(opt).from(cleanDoc).save().then(() => {
-                            cleanup();
-                        }).catch(err => {
-                            console.error('PDF save error, fallback to print:', err);
-                            cleanup();
-                            window.print();
-                        });
-                    } else if (action === 'share') {
-                        html2pdf().set(opt).from(cleanDoc).output('blob').then(async (pdfBlob) => {
-                            cleanup();
-                            try {
-                                const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
-                                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                                    await navigator.share({
-                                        title: title,
-                                        text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
-                                        files: [file]
-                                    });
-                                } else if (navigator.share) {
-                                    await navigator.share({
-                                        title: title,
-                                        text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
-                                        url: window.location.href
-                                    });
-                                } else {
-                                    html2pdf().set(opt).from(cleanDoc).save();
-                                }
-                            } catch (shareErr) {
-                                console.log('Share error, downloading instead:', shareErr);
-                                html2pdf().set(opt).from(cleanDoc).save();
-                            }
-                        }).catch(err => {
-                            console.error('PDF worker blob error:', err);
-                            cleanup();
-                            window.print();
-                        });
-                    }
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: title,
+                        text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
+                        files: [file]
+                    });
+                } else if (navigator.share) {
+                    await navigator.share({
+                        title: title,
+                        text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
+                        url: window.location.href
+                    });
                 } else {
-                    cleanup();
+                    doc.save(safeFileName);
+                }
+            } catch (shareErr) {
+                console.log('Share fallback:', shareErr);
+                try {
+                    const doc = generateVectorPdf();
+                    doc.save(safeFileName);
+                } catch (e) {
                     window.print();
                 }
-            }, 250);
+            }
         }
 
         // PDF Download Button
-        document.getElementById('downloadPdfBtn').addEventListener('click', () => {
-            handlePdfAction('download');
-        });
+        document.getElementById('downloadPdfBtn').addEventListener('click', handlePdfDownload);
 
         // PDF Share Button
-        document.getElementById('sharePdfBtn').addEventListener('click', () => {
-            handlePdfAction('share');
-        });
+        document.getElementById('sharePdfBtn').addEventListener('click', handlePdfShare);
 
         // Email PDF / Send to Party A
         document.getElementById('emailPdfBtn').addEventListener('click', () => {
