@@ -28,84 +28,25 @@
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- PDF Document Styling Override -->
+    <!-- Print & PDF Styling -->
     <style>
-        .pdf-mode {
-            background-color: #ffffff !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-            border: 2px solid #e2e8f0 !important;
-            box-shadow: none !important;
-            padding: 24px !important;
-            border-radius: 12px !important;
-            width: 100% !important;
-        }
-        .pdf-mode * {
-            background-color: transparent !important;
-            background: transparent !important;
-            color: #0f172a !important;
-            border-color: #cbd5e1 !important;
-            box-shadow: none !important;
-            text-shadow: none !important;
-        }
-        .pdf-mode #docTypeBadge {
-            background-color: #f0fdf4 !important;
-            color: #166534 !important;
-            border: 1px solid #bbf7d0 !important;
-        }
-        .pdf-mode #docTitle {
-            color: #0f172a !important;
-        }
-        .pdf-mode .grid,
-        .pdf-mode #partyASigContainer,
-        .pdf-mode #partyBSigStatus,
-        .pdf-mode #dualSignatureBlock > div > div,
-        .pdf-mode #dualSignatureBlock > div:last-child {
-            background-color: #f8fafc !important;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 8px !important;
-            color: #0f172a !important;
-        }
-        .pdf-mode #contractText {
-            background-color: #f8fafc !important;
-            color: #1e293b !important;
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 8px !important;
-            max-height: none !important;
-            overflow: visible !important;
-            white-space: pre-wrap !important;
-            font-size: 11px !important;
-            line-height: 1.6 !important;
-        }
-        .pdf-mode #partyAName,
-        .pdf-mode #partyANameFinal {
-            color: #0f172a !important;
-        }
-        .pdf-mode #partyBName,
-        .pdf-mode #partyBNameFinal {
-            color: #15803d !important;
-        }
-        .pdf-mode .text-textMuted,
-        .pdf-mode .text-slate-300,
-        .pdf-mode .text-slate-200 {
-            color: #475569 !important;
-        }
-        .pdf-mode #completedHash, 
-        .pdf-mode #completedTime {
-            color: #166534 !important;
-        }
-        .pdf-mode .text-emerald-400 {
-            color: #166534 !important;
-        }
-        .pdf-mode .text-amber-400 {
-            color: #d97706 !important;
-        }
-        .pdf-mode .text-accentGreen {
-            color: #15803d !important;
-        }
-        .pdf-mode img {
-            max-height: 40px !important;
-            object-fit: contain !important;
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            body > * {
+                display: none !important;
+            }
+            #cleanPdfExportContainer {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
         }
     </style>
 </head>
@@ -403,19 +344,107 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
+        // Create a pristine light-mode document element specifically for PDF generation
+        function createCleanPdfElement() {
+            const docId = document.getElementById('docId').innerText || 'ID: #101';
+            const docTitle = document.getElementById('docTitle').innerText || 'Sözleşme Metni';
+            const partyA = document.getElementById('partyAName').innerText || 'Taraf A';
+            const partyB = document.getElementById('partyBName').innerText || 'Taraf B';
+            const contractContent = document.getElementById('contractText').innerText || '';
+            const hash = document.getElementById('completedHash').innerText || 'OFFLINE-VERIFIED';
+            const timeStr = document.getElementById('completedTime').innerText || new Date().toLocaleString('tr-TR');
+
+            const sigAHtml = document.getElementById('finalSigAImg').innerHTML;
+            const sigBHtml = document.getElementById('finalSigBImg').innerHTML;
+
+            const div = document.createElement('div');
+            div.id = 'cleanPdfExportContainer';
+            div.style.cssText = `
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 750px;
+                background-color: #ffffff !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                padding: 36px;
+                box-sizing: border-box;
+                z-index: 99999;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+            `;
+
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #166534; padding-bottom: 14px; margin-bottom: 20px; background: #ffffff;">
+                    <div>
+                        <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">ContractGuard Safesign</h1>
+                        <p style="margin: 4px 0 0 0; font-size: 11px; color: #475569; font-weight: 600;">E-İmzalı Resmi Sözleşme Belgesi</p>
+                    </div>
+                    <div style="text-align: right; background: #ffffff;">
+                        <span style="display: inline-block; background-color: #f0fdf4; color: #166534; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px; border: 1px solid #bbf7d0;">
+                            ✓ E-İmza Mühürlü
+                        </span>
+                        <p style="margin: 6px 0 0 0; font-size: 11px; font-family: monospace; color: #64748b; font-weight: bold;">${docId}</p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px; background: #ffffff;">
+                    <h2 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 700; color: #0f172a;">${docTitle}</h2>
+                    <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
+                        Bu belge 5070 Sayılı Elektronik İmza Kanunu kapsamında tarafların dijital e-imzaları ve doğrulama mühürleri ile resmiyet kazanmıştır.
+                    </p>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px;">
+                    <div style="flex: 1; border-right: 1px solid #cbd5e1; padding-right: 12px; background: transparent;">
+                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">DÜZENLEYEN (TARAF A):</span>
+                        <strong style="font-size: 13px; color: #0f172a; display: block; font-weight: 700;">${partyA}</strong>
+                        <div style="margin-top: 6px; font-size: 11px; color: #166534; font-weight: 700;">✓ E-İmzalandı</div>
+                    </div>
+                    <div style="flex: 1; padding-left: 4px; background: transparent;">
+                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">ALICI / İMZACI (TARAF B):</span>
+                        <strong style="font-size: 13px; color: #15803d; display: block; font-weight: 700;">${partyB}</strong>
+                        <div style="margin-top: 6px; font-size: 11px; color: #166534; font-weight: 700;">✓ E-İmzalandı</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px; background: #ffffff;">
+                    <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">SÖZLEŞME MADDELERİ & ŞARTLAR:</div>
+                    <div style="background-color: #ffffff; border: 1px solid #cbd5e1; padding: 16px; border-radius: 8px; font-size: 11px; font-family: 'Courier New', Courier, monospace; color: #1e293b; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${contractContent}</div>
+                </div>
+
+                <div style="border-top: 2px solid #e2e8f0; padding-top: 18px; margin-top: 20px; background: #ffffff;">
+                    <h4 style="margin: 0 0 12px 0; font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">Taraf E-İmza Mühürleri & İmzalar</h4>
+                    <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                        <div style="flex: 1; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px;">
+                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px;">TARAF A İMZASI (${partyA}):</div>
+                            <div style="height: 52px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px;">
+                                ${sigAHtml || '<span style="color:#166534; font-weight:700; font-size:12px;">✓ Dijital Onaylı</span>'}
+                            </div>
+                        </div>
+                        <div style="flex: 1; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px;">
+                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px;">TARAF B İMZASI (${partyB}):</div>
+                            <div style="height: 52px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px;">
+                                ${sigBHtml || '<span style="color:#166534; font-weight:700; font-size:12px;">✓ E-İmzalandı</span>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 8px; font-size: 10px; font-family: monospace; color: #166534; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Mühür Hash (SHA-256): <strong style="color: #14532d;">${hash}</strong></span>
+                        <span>Zaman Damgası: <strong style="color: #14532d;">${timeStr}</strong></span>
+                    </div>
+                </div>
+            `;
+
+            return div;
+        }
+
         // Robust PDF Export Engine
         function handlePdfAction(action) {
-            const element = document.getElementById('printableContract');
-            const contractText = document.getElementById('contractText');
-
-            // Save original scroll / height styles
-            const origMaxHeight = contractText.style.maxHeight;
-            const origOverflow = contractText.style.overflow;
-
-            // Apply light printable document styling for PDF capture
-            element.classList.add('pdf-mode');
-            contractText.style.maxHeight = 'none';
-            contractText.style.overflow = 'visible';
+            const cleanDoc = createCleanPdfElement();
+            document.body.appendChild(cleanDoc);
 
             const cleanTitle = (decodeURIComponent(title) || 'E_Imzali_Sozlesme').replace(/[^a-zA-Z0-9]/g, '_');
             const safeFileName = `Sozlesme_${cleanTitle}.pdf`;
@@ -429,33 +458,31 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                     useCORS: true, 
                     backgroundColor: '#ffffff', 
                     logging: false,
-                    scrollX: 0,
-                    scrollY: 0
+                    windowWidth: 800
                 },
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
                 pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
-            function restoreStyles() {
-                element.classList.remove('pdf-mode');
-                contractText.style.maxHeight = origMaxHeight;
-                contractText.style.overflow = origOverflow;
+            function cleanup() {
+                if (cleanDoc && cleanDoc.parentNode) {
+                    cleanDoc.parentNode.removeChild(cleanDoc);
+                }
             }
 
-            // Delay snapshot to allow complete CSS repaint
             setTimeout(() => {
                 if (typeof html2pdf !== 'undefined') {
                     if (action === 'download') {
-                        html2pdf().set(opt).from(element).save().then(() => {
-                            restoreStyles();
+                        html2pdf().set(opt).from(cleanDoc).save().then(() => {
+                            cleanup();
                         }).catch(err => {
                             console.error('PDF save error, fallback to print:', err);
-                            restoreStyles();
+                            cleanup();
                             window.print();
                         });
                     } else if (action === 'share') {
-                        html2pdf().set(opt).from(element).output('blob').then(async (pdfBlob) => {
-                            restoreStyles();
+                        html2pdf().set(opt).from(cleanDoc).output('blob').then(async (pdfBlob) => {
+                            cleanup();
                             try {
                                 const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
                                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -471,23 +498,23 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                                         url: window.location.href
                                     });
                                 } else {
-                                    html2pdf().set(opt).from(element).save();
+                                    html2pdf().set(opt).from(cleanDoc).save();
                                 }
                             } catch (shareErr) {
                                 console.log('Share error, downloading instead:', shareErr);
-                                html2pdf().set(opt).from(element).save();
+                                html2pdf().set(opt).from(cleanDoc).save();
                             }
                         }).catch(err => {
                             console.error('PDF worker blob error:', err);
-                            restoreStyles();
+                            cleanup();
                             window.print();
                         });
                     }
                 } else {
-                    restoreStyles();
+                    cleanup();
                     window.print();
                 }
-            }, 150);
+            }, 100);
         }
 
         // PDF Download Button
