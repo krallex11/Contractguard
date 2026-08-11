@@ -110,7 +110,7 @@
             <!-- Agreement Text Box -->
             <div>
                 <label class="text-xs font-semibold text-textMuted uppercase tracking-wider block mb-2">Sözleşme Maddeleri & Şartlar:</label>
-                <div id="contractText" class="bg-darkBg border border-darkBorder rounded-xl p-4 text-xs font-mono text-slate-300 max-h-72 overflow-y-auto leading-relaxed whitespace-pre-wrap">
+                <div id="contractText" class="bg-darkBg border border-darkBorder rounded-xl p-4 text-xs font-mono text-slate-300 max-h-80 overflow-y-auto leading-relaxed whitespace-pre-wrap word-break-break-word">
 Sözleşme yükleniyor...
                 </div>
             </div>
@@ -119,16 +119,16 @@ Sözleşme yükleniyor...
             <div id="dualSignatureBlock" class="hidden pt-4 border-t border-darkBorder">
                 <h4 class="text-xs font-bold text-accentGreen uppercase tracking-wider mb-3">Taraf E-İmza Onay Mühürleri</h4>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="p-3 bg-darkBg rounded-xl border border-darkBorder text-xs space-y-2">
-                        <div class="text-textMuted font-semibold">TARAF A (DÜZENLEYEN):</div>
-                        <div id="finalSigAImg" class="h-12 flex items-center">
+                    <div class="p-3 bg-darkBg rounded-xl border border-darkBorder text-xs space-y-2 text-center">
+                        <div class="text-textMuted font-semibold text-[11px] uppercase">TARAF A (DÜZENLEYEN):</div>
+                        <div id="finalSigAImg" class="h-12 flex items-center justify-center bg-white/5 rounded-lg p-1">
                             <span class="text-emerald-400 font-bold">✓ E-İmzalı</span>
                         </div>
                         <div id="partyANameFinal" class="text-white font-bold text-xs">--</div>
                     </div>
-                    <div class="p-3 bg-darkBg rounded-xl border border-darkBorder text-xs space-y-2">
-                        <div class="text-textMuted font-semibold">TARAF B (ALICI):</div>
-                        <div id="finalSigBImg" class="h-12 flex items-center">
+                    <div class="p-3 bg-darkBg rounded-xl border border-darkBorder text-xs space-y-2 text-center">
+                        <div class="text-textMuted font-semibold text-[11px] uppercase">TARAF B (ALICI):</div>
+                        <div id="finalSigBImg" class="h-12 flex items-center justify-center bg-white/5 rounded-lg p-1">
                             <!-- B Signature Image inserted here -->
                         </div>
                         <div id="partyBNameFinal" class="text-accentGreen font-bold text-xs">--</div>
@@ -156,10 +156,10 @@ Sözleşme yükleniyor...
             </div>
 
             <!-- Canvas Container -->
-            <div class="relative w-full h-44 bg-darkBg border-2 border-dashed border-darkBorder rounded-xl overflow-hidden touch-none my-3">
+            <div class="relative w-full h-48 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl overflow-hidden touch-none my-3">
                 <canvas id="signatureCanvas" class="w-full h-full cursor-crosshair"></canvas>
-                <div id="canvasPlaceholder" class="absolute inset-0 flex items-center justify-center pointer-events-none text-textMuted text-xs font-mono">
-                    İmzanızı Buraya Çizin
+                <div id="canvasPlaceholder" class="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-xs font-mono">
+                    İmzanızı Buraya Çizin (Dokunmatik veya Fare İle)
                 </div>
             </div>
 
@@ -218,17 +218,41 @@ Sözleşme yükleniyor...
 
     <!-- Script Logic -->
     <script>
-        // Safe URI Decoder to prevent crashes on special chars / unencoded %
+        // Safe URI Decoder & Base64 Sanitizer
         function safeDecode(val, fallback = '') {
             if (!val) return fallback;
             try {
-                if (val.includes('%')) {
-                    return decodeURIComponent(val);
+                let str = val;
+                if (str.includes('%')) {
+                    try {
+                        str = decodeURIComponent(str);
+                    } catch (e) {
+                        str = str.replace(/%(?![0-9a-fA-F]{2})/g, '%25');
+                        str = decodeURIComponent(str);
+                    }
                 }
-                return val;
+                if (str.includes('+') && !str.startsWith('data:image')) {
+                    str = str.replace(/\+/g, ' ');
+                }
+                return str;
             } catch (e) {
-                return val;
+                return val || fallback;
             }
+        }
+
+        function fixBase64Image(raw) {
+            if (!raw) return '';
+            let str = raw.trim();
+            if (str.includes('%')) {
+                try { str = decodeURIComponent(str); } catch (e) {}
+            }
+            // Replace spaces back to '+' for base64 image data
+            str = str.replace(/ /g, '+');
+            str = str.replace(/^["']|["']$/g, '');
+            if (str && !str.startsWith('data:')) {
+                str = 'data:image/png;base64,' + str;
+            }
+            return str;
         }
 
         // Parse Query Parameters safely
@@ -245,7 +269,11 @@ Sözleşme yükleniyor...
             partyA = safeDecode(urlParams.get('partyA'), 'Sözleşme Düzenleyicisi');
             partyB = safeDecode(urlParams.get('partyB'), 'Alıcı / Müşteri');
             title = safeDecode(urlParams.get('title'), 'Uzaktan Hizmet ve Gizlilik Sözleşmesi');
-            sigA = safeDecode(urlParams.get('sigA'), '');
+            
+            const rawSigA = urlParams.get('sigA');
+            if (rawSigA) {
+                sigA = fixBase64Image(rawSigA);
+            }
             
             const rawTextParam = urlParams.get('text');
             if (rawTextParam) {
@@ -281,18 +309,18 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
         const partyASigBox = document.getElementById('partyASigBox');
         const finalSigAImg = document.getElementById('finalSigAImg');
         
-        if (sigA && sigA.trim().length > 10) {
-            let sigSrc = sigA.startsWith('data:') ? sigA : 'data:image/png;base64,' + sigA;
+        if (sigA && sigA.trim().length > 20) {
             partyASigBox.innerHTML = `
-                <img src="${sigSrc}" style="max-height: 36px; max-width: 140px; object-fit: contain;" alt="Taraf A İmza" />
+                <img src="${sigA}" style="max-height: 36px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A İmza" />
                 <span class="text-emerald-400 font-semibold text-[11px] block">✓ Taraf A İmzalı</span>
             `;
-            finalSigAImg.innerHTML = `<img src="${sigSrc}" style="max-height: 40px; max-width: 140px; object-fit: contain;" alt="Taraf A İmza" />`;
+            finalSigAImg.innerHTML = `<img src="${sigA}" style="max-height: 40px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A İmza" />`;
         } else {
             partyASigBox.innerHTML = `
                 <span class="text-emerald-400 text-sm">✓</span>
                 <span class="text-emerald-400 font-semibold text-xs">Dijital Onaylı (Taraf A)</span>
             `;
+            finalSigAImg.innerHTML = `<span class="text-emerald-400 font-semibold text-xs">✓ Dijital Onaylı</span>`;
         }
 
         document.getElementById('contractText').innerText = sampleText;
@@ -304,16 +332,23 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             backgroundColor: 'rgba(255,255,255,1)'
         });
 
-        // Handle Canvas Resize
+        // Handle Canvas Resize without losing drawing
         function resizeCanvas() {
             const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            let data = null;
+            if (!signaturePad.isEmpty()) {
+                data = signaturePad.toData();
+            }
             canvas.width = canvas.offsetWidth * ratio;
             canvas.height = canvas.offsetHeight * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
             signaturePad.clear();
+            if (data) {
+                signaturePad.fromData(data);
+            }
         }
         window.addEventListener("resize", resizeCanvas);
-        resizeCanvas();
+        setTimeout(resizeCanvas, 50);
 
         const placeholder = document.getElementById('canvasPlaceholder');
         const clearBtn = document.getElementById('clearBtn');
@@ -356,11 +391,11 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             // Update UI with B signature
             document.getElementById('partyBSigStatus').className = 'mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 font-semibold flex items-center gap-2';
             document.getElementById('partyBSigStatus').innerHTML = `
-                <img src="${partyBSigDataUrl}" style="max-height: 32px; max-width: 120px; object-fit: contain;" alt="Taraf B İmza" />
+                <img src="${partyBSigDataUrl}" style="max-height: 32px; max-width: 120px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf B İmza" />
                 <span>✓ E-İmzalandı</span>
             `;
 
-            document.getElementById('finalSigBImg').innerHTML = `<img src="${partyBSigDataUrl}" style="max-height: 40px; max-width: 140px; object-fit: contain;" alt="Taraf B İmza" />`;
+            document.getElementById('finalSigBImg').innerHTML = `<img src="${partyBSigDataUrl}" style="max-height: 40px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf B İmza" />`;
             document.getElementById('dualSignatureBlock').classList.remove('hidden');
 
             document.getElementById('completedHash').innerText = fakeHash;
@@ -384,16 +419,15 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             const timeStrVal = document.getElementById('completedTime').innerText || new Date().toLocaleString('tr-TR');
 
             let sigAImgHtml = '';
-            if (sigA && sigA.trim().length > 10) {
-                let sigSrc = sigA.startsWith('data:') ? sigA : 'data:image/png;base64,' + sigA;
-                sigAImgHtml = `<img src="${sigSrc}" style="max-height: 46px; max-width: 170px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto;" alt="Taraf A İmza" />`;
+            if (sigA && sigA.trim().length > 20) {
+                sigAImgHtml = `<img src="${sigA}" style="max-height: 48px; max-width: 170px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto; background: white; padding: 2px; border-radius: 4px;" alt="Taraf A İmza" />`;
             } else {
                 sigAImgHtml = `<span style="color:#166534; font-weight:700; font-size:12px;">✓ Dijital Onaylı (Taraf A)</span>`;
             }
 
             let sigBImgHtml = '';
-            if (partyBSigDataUrl && partyBSigDataUrl.length > 10) {
-                sigBImgHtml = `<img src="${partyBSigDataUrl}" style="max-height: 46px; max-width: 170px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto;" alt="Taraf B İmza" />`;
+            if (partyBSigDataUrl && partyBSigDataUrl.length > 20) {
+                sigBImgHtml = `<img src="${partyBSigDataUrl}" style="max-height: 48px; max-width: 170px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto; background: white; padding: 2px; border-radius: 4px;" alt="Taraf B İmza" />`;
             } else {
                 sigBImgHtml = `<span style="color:#166534; font-weight:700; font-size:12px;">✓ E-İmzalandı (Taraf B)</span>`;
             }
@@ -404,12 +438,12 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                 position: fixed;
                 left: 0;
                 top: 0;
-                width: 750px;
+                width: 720px;
                 background-color: #ffffff !important;
                 background: #ffffff !important;
                 color: #0f172a !important;
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                padding: 36px;
+                padding: 32px;
                 box-sizing: border-box;
                 z-index: 99999;
                 border: 1px solid #cbd5e1;
@@ -557,7 +591,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                     cleanup();
                     window.print();
                 }
-            }, 100);
+            }, 250);
         }
 
         // PDF Download Button
