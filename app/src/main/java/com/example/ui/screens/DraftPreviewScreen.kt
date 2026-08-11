@@ -117,7 +117,7 @@ fun DraftPreviewScreen(
         if (!contract.signatureBase64.isNullOrEmpty()) java.net.URLEncoder.encode(contract.signatureBase64, "UTF-8") else ""
     }
 
-    val remoteSigningLink = "$webHostBaseUrl/?id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle&text=$encodedContent${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
+    val remoteSigningLink = "$webHostBaseUrl/#id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle&text=$encodedContent${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
     val hasUserSigned = !contract.signatureBase64.isNullOrEmpty() || contract.status == "SIGNED"
 
     Scaffold(
