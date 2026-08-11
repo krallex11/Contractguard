@@ -32,39 +32,50 @@
     <style>
         .pdf-mode {
             background-color: #ffffff !important;
+            background: #ffffff !important;
             color: #0f172a !important;
-            border: 1px solid #cbd5e1 !important;
+            border: 2px solid #e2e8f0 !important;
             box-shadow: none !important;
             padding: 24px !important;
-            border-radius: 8px !important;
+            border-radius: 12px !important;
+            width: 100% !important;
         }
         .pdf-mode * {
+            background-color: transparent !important;
+            background: transparent !important;
             color: #0f172a !important;
             border-color: #cbd5e1 !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
         }
         .pdf-mode #docTypeBadge {
             background-color: #f0fdf4 !important;
             color: #166534 !important;
-            border-color: #bbf7d0 !important;
+            border: 1px solid #bbf7d0 !important;
         }
         .pdf-mode #docTitle {
             color: #0f172a !important;
         }
-        .pdf-mode .bg-darkBg, 
-        .pdf-mode .bg-darkBg\/80, 
-        .pdf-mode .bg-darkCard\/90,
+        .pdf-mode .grid,
         .pdf-mode #partyASigContainer,
-        .pdf-mode #partyBSigStatus {
+        .pdf-mode #partyBSigStatus,
+        .pdf-mode #dualSignatureBlock > div > div,
+        .pdf-mode #dualSignatureBlock > div:last-child {
             background-color: #f8fafc !important;
-            border-color: #cbd5e1 !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
             color: #0f172a !important;
         }
         .pdf-mode #contractText {
             background-color: #f8fafc !important;
             color: #1e293b !important;
-            border-color: #cbd5e1 !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 8px !important;
             max-height: none !important;
             overflow: visible !important;
+            white-space: pre-wrap !important;
+            font-size: 11px !important;
+            line-height: 1.6 !important;
         }
         .pdf-mode #partyAName,
         .pdf-mode #partyANameFinal {
@@ -74,7 +85,9 @@
         .pdf-mode #partyBNameFinal {
             color: #15803d !important;
         }
-        .pdf-mode .text-textMuted {
+        .pdf-mode .text-textMuted,
+        .pdf-mode .text-slate-300,
+        .pdf-mode .text-slate-200 {
             color: #475569 !important;
         }
         .pdf-mode #completedHash, 
@@ -89,6 +102,10 @@
         }
         .pdf-mode .text-accentGreen {
             color: #15803d !important;
+        }
+        .pdf-mode img {
+            max-height: 40px !important;
+            object-fit: contain !important;
         }
     </style>
 </head>
@@ -400,12 +417,23 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             contractText.style.maxHeight = 'none';
             contractText.style.overflow = 'visible';
 
+            const cleanTitle = (decodeURIComponent(title) || 'E_Imzali_Sozlesme').replace(/[^a-zA-Z0-9]/g, '_');
+            const safeFileName = `Sozlesme_${cleanTitle}.pdf`;
+
             const opt = {
                 margin:       [0.3, 0.3, 0.3, 0.3],
-                filename:     `Sozlesme_${decodeURIComponent(title).replace(/[^a-zA-Z0-9]/g, '_')}_Imzali.pdf`,
+                filename:     safeFileName,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    backgroundColor: '#ffffff', 
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
             function restoreStyles() {
@@ -414,51 +442,52 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                 contractText.style.overflow = origOverflow;
             }
 
-            if (typeof html2pdf !== 'undefined') {
-                const worker = html2pdf().set(opt).from(element);
-
-                if (action === 'download') {
-                    worker.save().then(() => {
-                        restoreStyles();
-                    }).catch(err => {
-                        console.error('PDF save error, fallback to print:', err);
-                        restoreStyles();
-                        window.print();
-                    });
-                } else if (action === 'share') {
-                    worker.output('blob').then(async (pdfBlob) => {
-                        restoreStyles();
-                        try {
-                            const file = new File([pdfBlob], `Sozlesme_${contractId}_Imzali.pdf`, { type: 'application/pdf' });
-                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                                await navigator.share({
-                                    title: decodeURIComponent(title),
-                                    text: `ContractGuard e-imzalı sözleşme belgesi (${decodeURIComponent(title)}).`,
-                                    files: [file]
-                                });
-                            } else if (navigator.share) {
-                                await navigator.share({
-                                    title: decodeURIComponent(title),
-                                    text: `ContractGuard e-imzalı sözleşme belgesi (${decodeURIComponent(title)}).`,
-                                    url: window.location.href
-                                });
-                            } else {
+            // Delay snapshot to allow complete CSS repaint
+            setTimeout(() => {
+                if (typeof html2pdf !== 'undefined') {
+                    if (action === 'download') {
+                        html2pdf().set(opt).from(element).save().then(() => {
+                            restoreStyles();
+                        }).catch(err => {
+                            console.error('PDF save error, fallback to print:', err);
+                            restoreStyles();
+                            window.print();
+                        });
+                    } else if (action === 'share') {
+                        html2pdf().set(opt).from(element).output('blob').then(async (pdfBlob) => {
+                            restoreStyles();
+                            try {
+                                const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
+                                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                    await navigator.share({
+                                        title: decodeURIComponent(title),
+                                        text: `ContractGuard e-imzalı sözleşme belgesi (${decodeURIComponent(title)}).`,
+                                        files: [file]
+                                    });
+                                } else if (navigator.share) {
+                                    await navigator.share({
+                                        title: decodeURIComponent(title),
+                                        text: `ContractGuard e-imzalı sözleşme belgesi (${decodeURIComponent(title)}).`,
+                                        url: window.location.href
+                                    });
+                                } else {
+                                    html2pdf().set(opt).from(element).save();
+                                }
+                            } catch (shareErr) {
+                                console.log('Share error, downloading instead:', shareErr);
                                 html2pdf().set(opt).from(element).save();
                             }
-                        } catch (shareErr) {
-                            console.log('Share error, downloading instead:', shareErr);
-                            html2pdf().set(opt).from(element).save();
-                        }
-                    }).catch(err => {
-                        console.error('PDF worker blob error:', err);
-                        restoreStyles();
-                        window.print();
-                    });
+                        }).catch(err => {
+                            console.error('PDF worker blob error:', err);
+                            restoreStyles();
+                            window.print();
+                        });
+                    }
+                } else {
+                    restoreStyles();
+                    window.print();
                 }
-            } else {
-                restoreStyles();
-                window.print();
-            }
+            }, 150);
         }
 
         // PDF Download Button
