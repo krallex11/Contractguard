@@ -218,44 +218,46 @@ Sözleşme yükleniyor...
 
     <!-- Script Logic -->
     <script>
-        // Parse Query Parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const contractId = urlParams.get('id') || 'SAMPLE-101';
-        const partyA = urlParams.get('partyA') || 'Sözleşme Düzenleyicisi';
-        const partyB = urlParams.get('partyB') || 'Alıcı / Müşteri';
-        const title = urlParams.get('title') || 'Uzaktan Hizmet ve Gizlilik Sözleşmesi';
-        const sigA = urlParams.get('sigA') || '';
-
-        // Populate Dynamic UI Elements
-        document.getElementById('docId').innerText = 'ID: #' + contractId;
-        document.getElementById('docTitle').innerText = decodeURIComponent(title);
-        document.getElementById('partyAName').innerText = decodeURIComponent(partyA);
-        document.getElementById('partyBName').innerText = decodeURIComponent(partyB);
-        document.getElementById('partyANameFinal').innerText = decodeURIComponent(partyA);
-        document.getElementById('partyBNameFinal').innerText = decodeURIComponent(partyB);
-
-        // Display Party A Signature if present
-        const partyASigBox = document.getElementById('partyASigBox');
-        const finalSigAImg = document.getElementById('finalSigAImg');
-        
-        if (sigA && sigA.trim().length > 10) {
-            let sigSrc = sigA.startsWith('data:') ? sigA : 'data:image/png;base64,' + sigA;
-            partyASigBox.innerHTML = `
-                <img src="${sigSrc}" class="h-10 object-contain max-w-[140px]" alt="Taraf A İmza" />
-                <span class="text-emerald-400 font-semibold text-[11px] block">✓ Taraf A İmzalı</span>
-            `;
-            finalSigAImg.innerHTML = `<img src="${sigSrc}" class="h-10 object-contain max-w-[140px]" alt="Taraf A İmza" />`;
-        } else {
-            partyASigBox.innerHTML = `
-                <span class="text-emerald-400 text-sm">✓</span>
-                <span class="text-emerald-400 font-semibold text-xs">Dijital Onaylı (Taraf A)</span>
-            `;
+        // Safe URI Decoder to prevent crashes on special chars / unencoded %
+        function safeDecode(val, fallback = '') {
+            if (!val) return fallback;
+            try {
+                if (val.includes('%')) {
+                    return decodeURIComponent(val);
+                }
+                return val;
+            } catch (e) {
+                return val;
+            }
         }
 
-        // Dummy text if not provided in URL
-        const sampleText = urlParams.get('text') ? decodeURIComponent(urlParams.get('text')) : 
-`1. TARAFLAR VE KONU
-İşbu sözleşme, Taraf A (${decodeURIComponent(partyA)}) ile Taraf B (${decodeURIComponent(partyB)}) arasında akdedilmiştir.
+        // Parse Query Parameters safely
+        let contractId = 'SAMPLE-101';
+        let partyA = 'Sözleşme Düzenleyicisi';
+        let partyB = 'Alıcı / Müşteri';
+        let title = 'Uzaktan Hizmet ve Gizlilik Sözleşmesi';
+        let sigA = '';
+        let sampleText = '';
+
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            contractId = safeDecode(urlParams.get('id'), 'SAMPLE-101');
+            partyA = safeDecode(urlParams.get('partyA'), 'Sözleşme Düzenleyicisi');
+            partyB = safeDecode(urlParams.get('partyB'), 'Alıcı / Müşteri');
+            title = safeDecode(urlParams.get('title'), 'Uzaktan Hizmet ve Gizlilik Sözleşmesi');
+            sigA = safeDecode(urlParams.get('sigA'), '');
+            
+            const rawTextParam = urlParams.get('text');
+            if (rawTextParam) {
+                sampleText = safeDecode(rawTextParam);
+            }
+        } catch (err) {
+            console.error('URL params parsing error:', err);
+        }
+
+        if (!sampleText) {
+            sampleText = `1. TARAFLAR VE KONU
+İşbu sözleşme, Taraf A (${partyA}) ile Taraf B (${partyB}) arasında akdedilmiştir.
 
 2. YÜKÜMLÜLÜKLER
 Taraf B, kendisine sunulan hizmet ve koşulları eksiksiz kabul eder. Taraf A, gerekli tüm teknik ve hukuki desteği sağlamakla yükümlüdür.
@@ -265,14 +267,41 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
 
 4. DİJİTAL ONAY
 İşbu belge, 5070 sayılı Elektronik İmza Kanunu kapsamında uzaktan elektronik imza yöntemiyle mühürlenmiştir.`;
+        }
+
+        // Populate Dynamic UI Elements safely
+        document.getElementById('docId').innerText = 'ID: #' + contractId;
+        document.getElementById('docTitle').innerText = title;
+        document.getElementById('partyAName').innerText = partyA;
+        document.getElementById('partyBName').innerText = partyB;
+        document.getElementById('partyANameFinal').innerText = partyA;
+        document.getElementById('partyBNameFinal').innerText = partyB;
+
+        // Display Party A Signature if present
+        const partyASigBox = document.getElementById('partyASigBox');
+        const finalSigAImg = document.getElementById('finalSigAImg');
+        
+        if (sigA && sigA.trim().length > 10) {
+            let sigSrc = sigA.startsWith('data:') ? sigA : 'data:image/png;base64,' + sigA;
+            partyASigBox.innerHTML = `
+                <img src="${sigSrc}" style="max-height: 36px; max-width: 140px; object-fit: contain;" alt="Taraf A İmza" />
+                <span class="text-emerald-400 font-semibold text-[11px] block">✓ Taraf A İmzalı</span>
+            `;
+            finalSigAImg.innerHTML = `<img src="${sigSrc}" style="max-height: 40px; max-width: 140px; object-fit: contain;" alt="Taraf A İmza" />`;
+        } else {
+            partyASigBox.innerHTML = `
+                <span class="text-emerald-400 text-sm">✓</span>
+                <span class="text-emerald-400 font-semibold text-xs">Dijital Onaylı (Taraf A)</span>
+            `;
+        }
 
         document.getElementById('contractText').innerText = sampleText;
 
         // Initialize Signature Pad
         const canvas = document.getElementById('signatureCanvas');
         const signaturePad = new SignaturePad(canvas, {
-            penColor: '#A3E635',
-            backgroundColor: 'rgba(0,0,0,0)'
+            penColor: '#0f172a',
+            backgroundColor: 'rgba(255,255,255,1)'
         });
 
         // Handle Canvas Resize
@@ -320,18 +349,18 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
         submitBtn.addEventListener('click', () => {
             if (signaturePad.isEmpty() || !agreeCheck.checked) return;
 
-            partyBSigDataUrl = signaturePad.toDataURL();
+            partyBSigDataUrl = signaturePad.toDataURL('image/png');
             const timestamp = new Date().toLocaleString('tr-TR');
             const fakeHash = 'SHA256-SEAL-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now();
 
             // Update UI with B signature
             document.getElementById('partyBSigStatus').className = 'mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 font-semibold flex items-center gap-2';
             document.getElementById('partyBSigStatus').innerHTML = `
-                <img src="${partyBSigDataUrl}" class="h-8 object-contain max-w-[120px]" alt="Taraf B İmza" />
+                <img src="${partyBSigDataUrl}" style="max-height: 32px; max-width: 120px; object-fit: contain;" alt="Taraf B İmza" />
                 <span>✓ E-İmzalandı</span>
             `;
 
-            document.getElementById('finalSigBImg').innerHTML = `<img src="${partyBSigDataUrl}" class="h-10 object-contain max-w-[140px]" alt="Taraf B İmza" />`;
+            document.getElementById('finalSigBImg').innerHTML = `<img src="${partyBSigDataUrl}" style="max-height: 40px; max-width: 140px; object-fit: contain;" alt="Taraf B İmza" />`;
             document.getElementById('dualSignatureBlock').classList.remove('hidden');
 
             document.getElementById('completedHash').innerText = fakeHash;
@@ -346,16 +375,28 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
 
         // Create a pristine light-mode document element specifically for PDF generation
         function createCleanPdfElement() {
-            const docId = document.getElementById('docId').innerText || 'ID: #101';
-            const docTitle = document.getElementById('docTitle').innerText || 'Sözleşme Metni';
-            const partyA = document.getElementById('partyAName').innerText || 'Taraf A';
-            const partyB = document.getElementById('partyBName').innerText || 'Taraf B';
-            const contractContent = document.getElementById('contractText').innerText || '';
-            const hash = document.getElementById('completedHash').innerText || 'OFFLINE-VERIFIED';
-            const timeStr = document.getElementById('completedTime').innerText || new Date().toLocaleString('tr-TR');
+            const docIdVal = document.getElementById('docId').innerText || 'ID: #101';
+            const docTitleVal = document.getElementById('docTitle').innerText || 'Sözleşme Metni';
+            const partyAVal = document.getElementById('partyAName').innerText || 'Taraf A';
+            const partyBVal = document.getElementById('partyBName').innerText || 'Taraf B';
+            const contractContentVal = document.getElementById('contractText').innerText || '';
+            const hashVal = document.getElementById('completedHash').innerText || 'OFFLINE-VERIFIED';
+            const timeStrVal = document.getElementById('completedTime').innerText || new Date().toLocaleString('tr-TR');
 
-            const sigAHtml = document.getElementById('finalSigAImg').innerHTML;
-            const sigBHtml = document.getElementById('finalSigBImg').innerHTML;
+            let sigAImgHtml = '';
+            if (sigA && sigA.trim().length > 10) {
+                let sigSrc = sigA.startsWith('data:') ? sigA : 'data:image/png;base64,' + sigA;
+                sigAImgHtml = `<img src="${sigSrc}" style="max-height: 46px; max-width: 170px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto;" alt="Taraf A İmza" />`;
+            } else {
+                sigAImgHtml = `<span style="color:#166534; font-weight:700; font-size:12px;">✓ Dijital Onaylı (Taraf A)</span>`;
+            }
+
+            let sigBImgHtml = '';
+            if (partyBSigDataUrl && partyBSigDataUrl.length > 10) {
+                sigBImgHtml = `<img src="${partyBSigDataUrl}" style="max-height: 46px; max-width: 170px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto;" alt="Taraf B İmza" />`;
+            } else {
+                sigBImgHtml = `<span style="color:#166534; font-weight:700; font-size:12px;">✓ E-İmzalandı (Taraf B)</span>`;
+            }
 
             const div = document.createElement('div');
             div.id = 'cleanPdfExportContainer';
@@ -385,12 +426,12 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                         <span style="display: inline-block; background-color: #f0fdf4; color: #166534; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px; border: 1px solid #bbf7d0;">
                             ✓ E-İmza Mühürlü
                         </span>
-                        <p style="margin: 6px 0 0 0; font-size: 11px; font-family: monospace; color: #64748b; font-weight: bold;">${docId}</p>
+                        <p style="margin: 6px 0 0 0; font-size: 11px; font-family: monospace; color: #64748b; font-weight: bold;">${docIdVal}</p>
                     </div>
                 </div>
 
                 <div style="margin-bottom: 20px; background: #ffffff;">
-                    <h2 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 700; color: #0f172a;">${docTitle}</h2>
+                    <h2 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 700; color: #0f172a;">${docTitleVal}</h2>
                     <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
                         Bu belge 5070 Sayılı Elektronik İmza Kanunu kapsamında tarafların dijital e-imzaları ve doğrulama mühürleri ile resmiyet kazanmıştır.
                     </p>
@@ -399,41 +440,41 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                 <div style="display: flex; gap: 16px; margin-bottom: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px;">
                     <div style="flex: 1; border-right: 1px solid #cbd5e1; padding-right: 12px; background: transparent;">
                         <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">DÜZENLEYEN (TARAF A):</span>
-                        <strong style="font-size: 13px; color: #0f172a; display: block; font-weight: 700;">${partyA}</strong>
+                        <strong style="font-size: 13px; color: #0f172a; display: block; font-weight: 700;">${partyAVal}</strong>
                         <div style="margin-top: 6px; font-size: 11px; color: #166534; font-weight: 700;">✓ E-İmzalandı</div>
                     </div>
                     <div style="flex: 1; padding-left: 4px; background: transparent;">
                         <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">ALICI / İMZACI (TARAF B):</span>
-                        <strong style="font-size: 13px; color: #15803d; display: block; font-weight: 700;">${partyB}</strong>
+                        <strong style="font-size: 13px; color: #15803d; display: block; font-weight: 700;">${partyBVal}</strong>
                         <div style="margin-top: 6px; font-size: 11px; color: #166534; font-weight: 700;">✓ E-İmzalandı</div>
                     </div>
                 </div>
 
                 <div style="margin-bottom: 20px; background: #ffffff;">
                     <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">SÖZLEŞME MADDELERİ & ŞARTLAR:</div>
-                    <div style="background-color: #ffffff; border: 1px solid #cbd5e1; padding: 16px; border-radius: 8px; font-size: 11px; font-family: 'Courier New', Courier, monospace; color: #1e293b; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${contractContent}</div>
+                    <div style="background-color: #ffffff; border: 1px solid #cbd5e1; padding: 16px; border-radius: 8px; font-size: 11px; font-family: 'Courier New', Courier, monospace; color: #1e293b; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${contractContentVal}</div>
                 </div>
 
                 <div style="border-top: 2px solid #e2e8f0; padding-top: 18px; margin-top: 20px; background: #ffffff;">
                     <h4 style="margin: 0 0 12px 0; font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">Taraf E-İmza Mühürleri & İmzalar</h4>
                     <div style="display: flex; gap: 16px; margin-bottom: 16px;">
-                        <div style="flex: 1; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px;">
-                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px;">TARAF A İMZASI (${partyA}):</div>
-                            <div style="height: 52px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px;">
-                                ${sigAHtml || '<span style="color:#166534; font-weight:700; font-size:12px;">✓ Dijital Onaylı</span>'}
+                        <div style="flex: 1; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">TARAF A İMZASI (${partyAVal}):</div>
+                            <div style="height: 56px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px; overflow: hidden;">
+                                ${sigAImgHtml}
                             </div>
                         </div>
-                        <div style="flex: 1; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px;">
-                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px;">TARAF B İMZASI (${partyB}):</div>
-                            <div style="height: 52px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px;">
-                                ${sigBHtml || '<span style="color:#166534; font-weight:700; font-size:12px;">✓ E-İmzalandı</span>'}
+                        <div style="flex: 1; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">TARAF B İMZASI (${partyBVal}):</div>
+                            <div style="height: 56px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px; overflow: hidden;">
+                                ${sigBImgHtml}
                             </div>
                         </div>
                     </div>
 
                     <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 8px; font-size: 10px; font-family: monospace; color: #166534; display: flex; justify-content: space-between; align-items: center;">
-                        <span>Mühür Hash (SHA-256): <strong style="color: #14532d;">${hash}</strong></span>
-                        <span>Zaman Damgası: <strong style="color: #14532d;">${timeStr}</strong></span>
+                        <span>Mühür Hash (SHA-256): <strong style="color: #14532d;">${hashVal}</strong></span>
+                        <span>Zaman Damgası: <strong style="color: #14532d;">${timeStrVal}</strong></span>
                     </div>
                 </div>
             `;
@@ -446,7 +487,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             const cleanDoc = createCleanPdfElement();
             document.body.appendChild(cleanDoc);
 
-            const cleanTitle = (decodeURIComponent(title) || 'E_Imzali_Sozlesme').replace(/[^a-zA-Z0-9]/g, '_');
+            const cleanTitle = (title || 'E_Imzali_Sozlesme').replace(/[^a-zA-Z0-9]/g, '_');
             const safeFileName = `Sozlesme_${cleanTitle}.pdf`;
 
             const opt = {
@@ -458,6 +499,8 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                     useCORS: true, 
                     backgroundColor: '#ffffff', 
                     logging: false,
+                    scrollX: 0,
+                    scrollY: 0,
                     windowWidth: 800
                 },
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
@@ -487,14 +530,14 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                                 const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
                                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                                     await navigator.share({
-                                        title: decodeURIComponent(title),
-                                        text: `ContractGuard e-imzalı sözleşme belgesi (${decodeURIComponent(title)}).`,
+                                        title: title,
+                                        text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
                                         files: [file]
                                     });
                                 } else if (navigator.share) {
                                     await navigator.share({
-                                        title: decodeURIComponent(title),
-                                        text: `ContractGuard e-imzalı sözleşme belgesi (${decodeURIComponent(title)}).`,
+                                        title: title,
+                                        text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
                                         url: window.location.href
                                     });
                                 } else {
@@ -529,9 +572,9 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
 
         // Email PDF / Send to Party A
         document.getElementById('emailPdfBtn').addEventListener('click', () => {
-            const subject = encodeURIComponent(`E-İmzalı Sözleşme Onayı: ${decodeURIComponent(title)}`);
+            const subject = encodeURIComponent(`E-İmzalı Sözleşme Onayı: ${title}`);
             const body = encodeURIComponent(
-                `Merhaba ${decodeURIComponent(partyA)},\n\n'${decodeURIComponent(title)}' sözleşmesi Taraf B (${decodeURIComponent(partyB)}) tarafından elektronik imza ile onaylanmıştır.\n\nİndirdiğim e-imzalı PDF dosyasını bu e-postaya ek olarak iletiyorum.\n\nSaygılarımla,\n${decodeURIComponent(partyB)}`
+                `Merhaba ${partyA},\n\n'${title}' sözleşmesi Taraf B (${partyB}) tarafından elektronik imza ile onaylanmıştır.\n\nİndirdiğim e-imzalı PDF dosyasını bu e-postaya ek olarak iletiyorum.\n\nSaygılarımla,\n${partyB}`
             );
             window.location.href = `mailto:?subject=${subject}&body=${body}`;
         });
