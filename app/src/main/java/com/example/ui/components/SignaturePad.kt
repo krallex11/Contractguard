@@ -8,7 +8,8 @@ import android.util.Base64
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -100,30 +101,6 @@ fun SignaturePad(
                     )
                 )
             }
-
-            if (isSigned) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SleekLimeGreenContainer)
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = SleekLimeGreenPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Signature Captured",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SleekLimeGreenPrimary
-                    )
-                }
-            }
         }
 
         Text(
@@ -142,23 +119,29 @@ fun SignaturePad(
                 .background(Color(0xFF0B0F19))
                 .border(1.dp, SleekDarkCardBorder, RoundedCornerShape(16.dp))
                 .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = { offset ->
-                            val newPath = Path().apply { moveTo(offset.x, offset.y) }
-                            currentPath = newPath
-                            paths.add(newPath)
-                            isSigned = true
-                        },
-                        onDrag = { change, _ ->
-                            currentPath?.lineTo(change.position.x, change.position.y)
-                            // Trigger recomposition
-                            val last = paths.removeAt(paths.size - 1)
-                            paths.add(last)
-                        },
-                        onDragEnd = {
-                            currentPath = null
-                        }
-                    )
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        down.consume()
+                        val newPath = Path().apply { moveTo(down.position.x, down.position.y) }
+                        currentPath = newPath
+                        paths.add(newPath)
+                        isSigned = true
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull()
+                            if (change != null && change.pressed) {
+                                change.consume()
+                                currentPath?.lineTo(change.position.x, change.position.y)
+                                if (paths.isNotEmpty()) {
+                                    val last = paths.removeAt(paths.size - 1)
+                                    paths.add(last)
+                                }
+                            }
+                        } while (event.changes.any { it.pressed })
+
+                        currentPath = null
+                    }
                 }
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {

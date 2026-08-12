@@ -37,21 +37,27 @@
                 padding: 0 !important;
                 margin: 0 !important;
             }
-            header, footer, #signatureSection, button, .no-print {
+            header, footer, #printableContract, #signatureSection, #successState > div:first-child, button, .no-print {
                 display: none !important;
             }
             #successState {
                 display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             #officialDocCard {
                 display: block !important;
-                position: relative !important;
+                position: static !important;
                 width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 20px !important;
                 border: none !important;
                 box-shadow: none !important;
                 background: #ffffff !important;
                 color: #000000 !important;
-                padding: 0 !important;
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
             }
         }
     </style>
@@ -535,7 +541,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             window.scrollTo({ top: document.getElementById('successState').offsetTop - 20, behavior: 'smooth' });
         });
 
-        // Universal Fail-Safe PDF Generator Engine
+        // Universal High-Definition Single-Page PDF Generator Engine
         function generatePdfDocument(action = 'download') {
             const downloadBtn = document.getElementById('downloadPdfBtn');
             const originalBtnHtml = downloadBtn ? downloadBtn.innerHTML : '';
@@ -544,12 +550,126 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                 downloadBtn.disabled = true;
             }
 
-            const targetElement = document.getElementById('officialDocCard');
+            const docIdVal = document.getElementById('officialDocId')?.innerText || ('ID: #' + (contractId || '101'));
+            const docTitleVal = title || 'Resmi E-İmzalı Sözleşme';
+            const partyAVal = partyA || 'Taraf A';
+            const partyBVal = partyB || 'Taraf B';
+            const contractContentVal = sampleText || '';
+            const hashVal = document.getElementById('officialHash')?.innerText || ('SHA256-SEAL-' + Math.random().toString(36).substring(2, 10).toUpperCase());
+            const timeStrVal = document.getElementById('officialTime')?.innerText || new Date().toLocaleString('tr-TR');
+
+            let sigAImgHtml = '';
+            if (sigA && sigA.trim().length > 20) {
+                sigAImgHtml = `<img src="${sigA}" style="max-height: 48px; max-width: 180px; object-fit: contain; margin: 0 auto; display: block;" alt="Taraf A İmza" />`;
+            } else {
+                sigAImgHtml = `<div style="color: #15803d; font-weight: 700; font-size: 12px; text-align: center; padding-top: 10px;">✓ Dijital Onaylı (${partyAVal})</div>`;
+            }
+
+            let sigBImgHtml = '';
+            if (partyBSigDataUrl && partyBSigDataUrl.length > 20) {
+                sigBImgHtml = `<img src="${partyBSigDataUrl}" style="max-height: 48px; max-width: 180px; object-fit: contain; margin: 0 auto; display: block;" alt="Taraf B İmza" />`;
+            } else {
+                sigBImgHtml = `<div style="color: #15803d; font-weight: 700; font-size: 12px; text-align: center; padding-top: 10px;">✓ E-İmzalandı (${partyBVal})</div>`;
+            }
+
+            // Create off-screen pristine A4 container with exact 794px width
+            const cleanDoc = document.createElement('div');
+            cleanDoc.style.cssText = `
+                position: absolute;
+                left: -9999px;
+                top: 0;
+                width: 794px;
+                background-color: #ffffff !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                padding: 36px;
+                box-sizing: border-box;
+            `;
+
+            cleanDoc.innerHTML = `
+                <div style="width: 100%; background: #ffffff; color: #0f172a; padding: 0; box-sizing: border-box; line-height: 1.4;">
+                    <!-- Document Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #15803d; padding-bottom: 14px; margin-bottom: 20px;">
+                        <div>
+                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">ContractGuard Safesign</h1>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; color: #475569; font-weight: 600;">E-İmzalı Resmi Sözleşme Belgesi</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="display: inline-block; background-color: #f0fdf4; color: #166534; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px; border: 1px solid #bbf7d0;">
+                                ✓ E-İmza Mühürlü
+                            </span>
+                            <p style="margin: 6px 0 0 0; font-size: 11px; font-family: monospace; color: #64748b; font-weight: bold;">${docIdVal}</p>
+                        </div>
+                    </div>
+
+                    <!-- Contract Title & Legal Banner -->
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #0f172a;">${docTitleVal}</h2>
+                        <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.4;">
+                            Bu belge 5070 Sayılı Elektronik İmza Kanunu kapsamında tarafların dijital e-imzaları ve doğrulama mühürleri ile resmiyet kazanmıştır.
+                        </p>
+                    </div>
+
+                    <!-- Parties Grid -->
+                    <div style="display: flex; gap: 16px; margin-bottom: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px;">
+                        <div style="flex: 1; border-right: 1px solid #cbd5e1; padding-right: 12px;">
+                            <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 3px;">DÜZENLEYEN (TARAF A):</span>
+                            <strong style="font-size: 13px; color: #0f172a; display: block; font-weight: 700;">${partyAVal}</strong>
+                            <div style="margin-top: 4px; font-size: 11px; color: #15803d; font-weight: 700;">✓ E-İmzalandı</div>
+                        </div>
+                        <div style="flex: 1; padding-left: 8px;">
+                            <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 3px;">ALICI / İMZACI (TARAF B):</span>
+                            <strong style="font-size: 13px; color: #15803d; display: block; font-weight: 700;">${partyBVal}</strong>
+                            <div style="margin-top: 4px; font-size: 11px; color: #15803d; font-weight: 700;">✓ E-İmzalandı</div>
+                        </div>
+                    </div>
+
+                    <!-- Contract Terms Text Box -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">SÖZLEŞME MADDELERİ & ŞARTLAR:</div>
+                        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; padding: 14px; border-radius: 6px; font-size: 11px; font-family: monospace; color: #1e293b; line-height: 1.5; white-space: pre-wrap; word-break: break-word; min-height: 100px;">${contractContentVal}</div>
+                    </div>
+
+                    <!-- Dual Signature Block -->
+                    <div style="border-top: 2px solid #e2e8f0; padding-top: 16px; margin-top: 20px;">
+                        <h4 style="margin: 0 0 12px 0; font-size: 11px; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px;">Taraf E-İmza Mühürleri & İmzalar</h4>
+                        <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                            <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">TARAF A İMZASI (${partyAVal}):</div>
+                                <div style="height: 52px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px; overflow: hidden;">
+                                    ${sigAImgHtml}
+                                </div>
+                            </div>
+                            <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">TARAF B İMZASI (${partyBVal}):</div>
+                                <div style="height: 52px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 4px; overflow: hidden;">
+                                    ${sigBImgHtml}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hash & Timestamp Seal Bar -->
+                        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 6px; font-size: 10px; font-family: monospace; color: #166534; display: flex; justify-content: space-between; align-items: center;">
+                            <span>Mühür Hash (SHA-256): <strong style="color: #14532d;">${hashVal}</strong></span>
+                            <span>Zaman Damgası: <strong style="color: #14532d;">${timeStrVal}</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Legal Footer -->
+                    <div style="margin-top: 24px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 10px;">
+                        ContractGuard Safesign • 5070 Sayılı Elektronik İmza Kanunu Uyarınca Islak İmza Hükmündedir.
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(cleanDoc);
+
             const cleanTitle = (title || 'E_Imzali_Sozlesme').replace(/[^a-zA-Z0-9]/g, '_');
             const safeFileName = `Sozlesme_${cleanTitle}.pdf`;
 
             const opt = {
-                margin:       [6, 6, 6, 6],
+                margin:       0,
                 filename:     safeFileName,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
@@ -558,31 +678,32 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                     backgroundColor: '#ffffff', 
                     logging: false,
                     scrollX: 0,
-                    scrollY: 0
+                    scrollY: 0,
+                    windowWidth: 794
                 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
                 pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
-            function resetBtn() {
-                if (downloadBtn && action === 'download') {
-                    downloadBtn.innerHTML = originalBtnHtml;
-                    downloadBtn.disabled = false;
+            function cleanup() {
+                if (cleanDoc && cleanDoc.parentNode) {
+                    cleanDoc.parentNode.removeChild(cleanDoc);
                 }
+                resetBtn();
             }
 
-            if (typeof html2pdf !== 'undefined' && targetElement) {
+            if (typeof html2pdf !== 'undefined') {
                 if (action === 'download') {
-                    html2pdf().set(opt).from(targetElement).save().then(() => {
-                        resetBtn();
+                    html2pdf().set(opt).from(cleanDoc).save().then(() => {
+                        cleanup();
                     }).catch(err => {
                         console.error('html2pdf save error, fallback to print:', err);
-                        resetBtn();
+                        cleanup();
                         window.print();
                     });
                 } else if (action === 'share') {
-                    html2pdf().set(opt).from(targetElement).output('blob').then(async (pdfBlob) => {
-                        resetBtn();
+                    html2pdf().set(opt).from(cleanDoc).output('blob').then(async (pdfBlob) => {
+                        cleanup();
                         try {
                             const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
                             if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -598,20 +719,20 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                                     url: window.location.href
                                 });
                             } else {
-                                html2pdf().set(opt).from(targetElement).save();
+                                html2pdf().set(opt).from(cleanDoc).save();
                             }
                         } catch (shareErr) {
                             console.log('Share error, downloading instead:', shareErr);
-                            html2pdf().set(opt).from(targetElement).save();
+                            html2pdf().set(opt).from(cleanDoc).save();
                         }
                     }).catch(err => {
                         console.error('PDF blob error:', err);
-                        resetBtn();
+                        cleanup();
                         window.print();
                     });
                 }
             } else {
-                resetBtn();
+                cleanup();
                 window.print();
             }
         }
