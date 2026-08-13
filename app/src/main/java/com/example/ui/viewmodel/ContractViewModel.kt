@@ -144,7 +144,7 @@ class ContractViewModel(application: Application) : AndroidViewModel(application
 
             dao.updateContract(updated)
             _selectedContract.value = updated
-            _toastMessage.value = "Taraf A E-İmzası kaydedildi ve onaylı PDF oluşturuldu!"
+            _toastMessage.value = "Party A signature saved & certified PDF created!"
         }
     }
 
@@ -175,7 +175,7 @@ class ContractViewModel(application: Application) : AndroidViewModel(application
 
             dao.updateContract(updated)
             _selectedContract.value = updated
-            _toastMessage.value = "Alıcı / Taraf B (${current.partyB}) uzaktan imzayı tamamladı! Tamamlanmış PDF oluşturuldu ve kaydedildi."
+            _toastMessage.value = "Recipient Party B (${current.partyB}) completed remote signature! Certified PDF updated."
         }
     }
 
@@ -196,9 +196,9 @@ class ContractViewModel(application: Application) : AndroidViewModel(application
                 } else {
                     PdfExporter.sharePdfGeneral(context, pdfFile, current.title)
                 }
-                _toastMessage.value = "E-İmzalı PDF hazırlandı!"
+                _toastMessage.value = "E-Signed PDF ready!"
             } else {
-                _toastMessage.value = "PDF oluşturulurken bir hata meydana geldi."
+                _toastMessage.value = "An error occurred while generating PDF."
             }
         }
     }
@@ -216,9 +216,9 @@ class ContractViewModel(application: Application) : AndroidViewModel(application
                 _selectedContract.value = updated
 
                 PdfExporter.openAndDownloadPdf(context, pdfFile, current.title)
-                _toastMessage.value = "E-İmzalı PDF hazırlandı ve açılıyor!"
+                _toastMessage.value = "E-Signed PDF created!"
             } else {
-                _toastMessage.value = "PDF oluşturulurken hata oluştu."
+                _toastMessage.value = "Error generating PDF."
             }
         }
     }
@@ -229,7 +229,7 @@ class ContractViewModel(application: Application) : AndroidViewModel(application
             if (_selectedContract.value?.id == contract.id) {
                 _selectedContract.value = null
             }
-            _toastMessage.value = "Sözleşme silindi."
+            _toastMessage.value = "Contract deleted."
         }
     }
 

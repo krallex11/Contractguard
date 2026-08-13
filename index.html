@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ContractGuard - Uzaktan E-İmza Portalı</title>
+    <title>ContractGuard - Remote E-Signature Portal</title>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -57,7 +57,7 @@
                 width: 100% !important;
                 max-width: 100% !important;
                 margin: 0 !important;
-                padding: 8px 12px !important;
+                padding: 12px 16px !important;
                 border: none !important;
                 box-shadow: none !important;
                 background: #ffffff !important;
@@ -81,13 +81,13 @@
                 🛡️
             </div>
             <div>
-                <h1 class="text-lg font-bold text-white tracking-wide">ContractGuard Safesign</h1>
-                <p class="text-xs text-textMuted">Uzaktan E-İmza & Onay Portalı</p>
+                <h1 class="text-lg font-bold text-white tracking-wide">ContractGuard Portal</h1>
+                <p class="text-xs text-textMuted">Remote E-Signature & Agreement Execution</p>
             </div>
         </div>
         <div class="flex items-center space-x-1 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-xs font-semibold">
             <span>🔒</span>
-            <span>256-bit SSL Güvenli Bağlantı</span>
+            <span>256-bit SSL Secure Connection</span>
         </div>
     </header>
 
@@ -98,58 +98,58 @@
         <div id="printableContract" class="bg-darkCard border border-darkBorder rounded-2xl p-6 shadow-xl space-y-5">
             <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-darkBorder">
                 <span id="docTypeBadge" class="text-xs font-bold px-3 py-1 rounded-md bg-accentGreen/10 text-accentGreen border border-accentGreen/20">
-                    E-SÖZLEŞME BELGESİ
+                    ELECTRONIC AGREEMENT
                 </span>
                 <span id="docId" class="text-xs font-mono text-textMuted">ID: #---</span>
             </div>
 
             <div>
-                <h2 id="docTitle" class="text-xl font-bold text-white mb-1">Resmi Sözleşme Taslağı</h2>
-                <p class="text-xs text-textMuted">Aşağıdaki sözleşme şartlarını inceleyip imzanızı ekleyebilirsiniz.</p>
+                <h2 id="docTitle" class="text-xl font-bold text-white mb-1">Official Service Agreement</h2>
+                <p class="text-xs text-textMuted">Please review the contract terms below and affix your electronic signature.</p>
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4 p-4 bg-darkBg/80 rounded-xl border border-darkBorder text-xs">
                 <div>
-                    <span class="text-textMuted block font-semibold mb-1">DÜZENLEYEN (TARAF A):</span>
+                    <span class="text-textMuted block font-semibold mb-1">ISSUER / CLIENT (PARTY A):</span>
                     <strong id="partyAName" class="text-white text-sm block">--</strong>
                     <div id="partyASigContainer" class="mt-2 p-2 bg-darkCard/90 rounded-lg border border-darkBorder flex items-center gap-2">
                         <!-- Party A Signature Preview -->
                         <div id="partyASigBox" class="flex items-center gap-2">
                             <span class="text-emerald-400 text-base">✓</span>
-                            <span class="text-emerald-400 font-semibold text-xs">E-İmzalandı</span>
+                            <span class="text-emerald-400 font-semibold text-xs">Digitally Signed</span>
                         </div>
                     </div>
                 </div>
                 <div>
-                    <span class="text-textMuted block font-semibold mb-1">ALICI / İMZACI (TARAF B):</span>
+                    <span class="text-textMuted block font-semibold mb-1">RECIPIENT / CONTRACTOR (PARTY B):</span>
                     <strong id="partyBName" class="text-accentGreen text-sm block">--</strong>
                     <div id="partyBSigStatus" class="mt-2 p-2 bg-darkCard/90 rounded-lg border border-darkBorder text-xs text-amber-400 font-semibold">
-                        ⏳ İmzanız Bekleniyor
+                        ⏳ Signature Pending
                     </div>
                 </div>
             </div>
 
             <!-- Agreement Text Box -->
             <div>
-                <label class="text-xs font-semibold text-textMuted uppercase tracking-wider block mb-2">Sözleşme Maddeleri & Şartlar:</label>
-                <div id="contractText" class="bg-darkBg border border-darkBorder rounded-xl p-4 text-xs font-mono text-slate-300 max-h-80 overflow-y-auto leading-relaxed whitespace-pre-wrap word-break-break-word">
-Sözleşme yükleniyor...
+                <label class="text-xs font-semibold text-textMuted uppercase tracking-wider block mb-2">Contract Terms & Clauses:</label>
+                <div id="contractText" class="bg-darkBg border border-darkBorder rounded-xl p-4 text-xs font-mono text-slate-300 max-h-96 overflow-y-auto leading-relaxed whitespace-pre-wrap break-words">
+Loading agreement terms...
                 </div>
             </div>
 
             <!-- Completed Dual Signature Block (Rendered after signing) -->
             <div id="dualSignatureBlock" class="hidden pt-4 border-t border-darkBorder">
-                <h4 class="text-xs font-bold text-accentGreen uppercase tracking-wider mb-3">Taraf E-İmza Onay Mühürleri</h4>
+                <h4 class="text-xs font-bold text-accentGreen uppercase tracking-wider mb-3">Electronic Signature & Verification Seals</h4>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="p-3 bg-darkBg rounded-xl border border-darkBorder text-xs space-y-2 text-center">
-                        <div class="text-textMuted font-semibold text-[11px] uppercase">TARAF A (DÜZENLEYEN):</div>
+                        <div class="text-textMuted font-semibold text-[11px] uppercase">PARTY A (ISSUER):</div>
                         <div id="finalSigAImg" class="h-12 flex items-center justify-center bg-white/5 rounded-lg p-1">
-                            <span class="text-emerald-400 font-bold">✓ E-İmzalı</span>
+                            <span class="text-emerald-400 font-bold">✓ Digitally Signed</span>
                         </div>
                         <div id="partyANameFinal" class="text-white font-bold text-xs">--</div>
                     </div>
                     <div class="p-3 bg-darkBg rounded-xl border border-darkBorder text-xs space-y-2 text-center">
-                        <div class="text-textMuted font-semibold text-[11px] uppercase">TARAF B (ALICI):</div>
+                        <div class="text-textMuted font-semibold text-[11px] uppercase">PARTY B (RECIPIENT):</div>
                         <div id="finalSigBImg" class="h-12 flex items-center justify-center bg-white/5 rounded-lg p-1">
                             <!-- B Signature Image inserted here -->
                         </div>
@@ -157,7 +157,7 @@ Sözleşme yükleniyor...
                     </div>
                 </div>
                 <div class="mt-3 p-3 bg-darkBg rounded-xl border border-emerald-500/30 text-[11px] font-mono text-emerald-400 flex flex-wrap justify-between items-center gap-2">
-                    <span>Mühür Hash: <strong id="completedHash">--</strong></span>
+                    <span>Verification Hash: <strong id="completedHash">--</strong></span>
                     <span id="completedTime" class="text-textMuted">--</span>
                 </div>
             </div>
@@ -168,12 +168,12 @@ Sözleşme yükleniyor...
             <div class="flex items-center justify-between mb-3">
                 <div>
                     <h3 class="text-base font-bold text-white flex items-center gap-2">
-                        <span>✍️</span> Alıcı E-İmzası (Taraf B)
+                        <span>✍️</span> Recipient Electronic Signature (Party B)
                     </h3>
-                    <p class="text-xs text-textMuted">Lütfen aşağıdaki alana parmağınızla veya dokunmatik kalem ile imzanızı atın.</p>
+                    <p class="text-xs text-textMuted">Please draw your signature in the box below using your finger, stylus, or mouse.</p>
                 </div>
-                <button id="clearBtn" class="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg transition">
-                    Temizle
+                <button id="clearBtn" class="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg transition">
+                    Clear
                 </button>
             </div>
 
@@ -181,7 +181,7 @@ Sözleşme yükleniyor...
             <div class="relative w-full h-48 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl overflow-hidden touch-none my-3">
                 <canvas id="signatureCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 <div id="canvasPlaceholder" class="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-xs font-mono">
-                    İmzanızı Buraya Çizin (Dokunmatik veya Fare İle)
+                    Draw Your Signature Here (Touch or Mouse)
                 </div>
             </div>
 
@@ -190,12 +190,12 @@ Sözleşme yükleniyor...
                 <label class="flex items-start space-x-3 text-xs text-textMuted cursor-pointer">
                     <input type="checkbox" id="legalAgreeCheck" class="mt-0.5 rounded border-darkBorder bg-darkBg text-accentGreen focus:ring-accentGreen">
                     <span>
-                        Yukarıda belirtilen sözleşme maddelerini okudum, anladım ve elektronik imzam ile onaylayarak hukuken bağlayıcı olarak kabul ediyorum (5070 Sayılı Elektronik İmza Kanunu Uyarınca).
+                        I have read, understood, and accept the contract terms above, and hereby affix my legally binding electronic signature in accordance with applicable electronic signature laws (US ESIGN Act 15 U.S.C. § 7001 & EU eIDAS Regulation).
                     </span>
                 </label>
 
                 <button id="submitBtn" disabled class="w-full py-3.5 bg-accentGreen text-slate-950 font-bold text-sm rounded-xl opacity-50 cursor-not-allowed transition duration-200 hover:bg-accentGreenHover shadow-lg shadow-accentGreen/10">
-                    Sözleşmeyi İmzala ve Onayla
+                    Sign & Execute Agreement
                 </button>
             </div>
         </div>
@@ -207,9 +207,9 @@ Sözleşme yükleniyor...
                     ✓
                 </div>
                 <div>
-                    <h3 class="text-lg font-bold text-white">E-İmzanız Başarıyla Atıldı ve Mühürlendi!</h3>
+                    <h3 class="text-lg font-bold text-white">Your Electronic Signature Has Been Affixed & Sealed!</h3>
                     <p class="text-xs text-textMuted max-w-md mx-auto mt-1">
-                        Sözleşmeniz her iki tarafın e-imzası ile resmiyet kazanmıştır. Aşağıdaki butonları kullanarak PDF belgesini indirebilir veya yazdırabilirsiniz.
+                        Your agreement is now legally executed with digital signatures from both parties. You may download or print the official PDF document below.
                     </p>
                 </div>
 
@@ -217,17 +217,17 @@ Sözleşme yükleniyor...
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                     <button id="downloadPdfBtn" class="py-3.5 px-4 bg-accentGreen hover:bg-accentGreenHover text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-accentGreen/10">
                         <span>📥</span>
-                        <span>PDF İndir</span>
+                        <span>Download PDF</span>
                     </button>
 
                     <button id="printPdfBtn" class="py-3.5 px-4 bg-darkBg hover:bg-darkBorder border border-emerald-500/40 text-emerald-400 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition">
                         <span>🖨️</span>
-                        <span>Yazdır / PDF Kaydet</span>
+                        <span>Print / Save as PDF</span>
                     </button>
 
                     <button id="sharePdfBtn" class="py-3.5 px-4 bg-darkBg hover:bg-darkBorder border border-accentGreen text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition">
                         <span>📤</span>
-                        <span>Paylaş</span>
+                        <span>Share Document</span>
                     </button>
                 </div>
             </div>
@@ -236,80 +236,80 @@ Sözleşme yükleniyor...
             <div class="mt-6">
                 <div class="text-[11px] font-semibold text-textMuted mb-2 flex items-center gap-2 no-print">
                     <span>📄</span>
-                    <span>Resmi E-İmzalı Belge Görünümü</span>
+                    <span>Official E-Signed Document View</span>
                 </div>
-                <div id="officialDocCard" class="bg-white text-slate-900 p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-2xl space-y-3 text-left" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                <div id="officialDocCard" class="bg-white text-slate-900 p-4 sm:p-6 rounded-xl border border-slate-200 shadow-2xl space-y-4 text-left" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
                     
                     <!-- Header -->
-                    <div class="flex justify-between items-start border-b-2 border-emerald-800 pb-2">
+                    <div class="flex justify-between items-start border-b-2 border-emerald-800 pb-3">
                         <div>
-                            <h1 class="text-sm sm:text-base font-black text-slate-900 tracking-tight">ContractGuard Safesign</h1>
-                            <p class="text-[9px] font-semibold text-slate-600 mt-0.5">E-İmzalı Resmi Sözleşme Belgesi</p>
+                            <h1 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">ContractGuard Official Legal Record</h1>
+                            <p class="text-[10px] font-semibold text-slate-600 mt-0.5">Electronically Signed & Executed Service Agreement</p>
                         </div>
                         <div class="text-right">
-                            <span class="inline-block bg-emerald-50 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
-                                ✓ E-İmza Mühürlü
+                            <span class="inline-block bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                ✓ Executed & Sealed
                             </span>
-                            <p id="officialDocId" class="text-[9px] font-mono font-bold text-slate-500 mt-0.5">ID: #---</p>
+                            <p id="officialDocId" class="text-[10px] font-mono font-bold text-slate-500 mt-1">ID: #---</p>
                         </div>
                     </div>
 
                     <!-- Title & Legal Banner -->
                     <div>
-                        <h2 id="officialDocTitle" class="text-xs font-bold text-slate-900 mb-0.5">--</h2>
-                        <p class="text-[9px] text-slate-600 leading-tight">
-                            Bu belge 5070 Sayılı Elektronik İmza Kanunu kapsamında tarafların dijital e-imzaları ve doğrulama mühürleri ile resmiyet kazanmıştır.
+                        <h2 id="officialDocTitle" class="text-sm font-bold text-slate-900 mb-1">--</h2>
+                        <p class="text-[9.5px] text-slate-600 leading-snug">
+                            This document is executed electronically pursuant to the US Electronic Signatures in Global and National Commerce Act (ESIGN Act, 15 U.S.C. § 7001 et seq.), the Uniform Electronic Transactions Act (UETA), and EU eIDAS Regulation (No 910/2014). Electronic signatures attached hereto constitute valid, binding, and legal assent.
                         </p>
                     </div>
 
                     <!-- Compact Parties Bar -->
-                    <div class="flex flex-wrap items-center justify-between bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg text-[11px] gap-2">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[8px] font-bold text-slate-500 uppercase">TARAF A:</span>
-                            <strong id="officialPartyA" class="font-bold text-slate-900 text-[11px]">--</strong>
+                    <div class="flex flex-wrap items-center justify-between bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold text-slate-500 uppercase">PARTY A (ISSUER):</span>
+                            <strong id="officialPartyA" class="font-bold text-slate-900 text-xs">--</strong>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[8px] font-bold text-slate-500 uppercase">TARAF B (İMZACI):</span>
-                            <strong id="officialPartyB" class="font-bold text-emerald-800 text-[11px]">--</strong>
-                            <span class="text-[9px] font-bold text-emerald-700 ml-1">✓ E-İmzalandı</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold text-slate-500 uppercase">PARTY B (SIGNATORY):</span>
+                            <strong id="officialPartyB" class="font-bold text-emerald-800 text-xs">--</strong>
+                            <span class="text-[10px] font-bold text-emerald-700 ml-1">✓ Executed</span>
                         </div>
                     </div>
 
                     <!-- Contract Text Body -->
                     <div>
-                        <div class="text-[8.5px] font-bold text-slate-600 uppercase mb-0.5 tracking-wider">SÖZLEŞME MADDELERİ & ŞARTLAR:</div>
-                        <div id="officialContractBody" class="bg-white border border-slate-300 p-2 rounded-lg text-[8px] font-mono text-slate-800 leading-tight whitespace-pre-wrap break-words">
+                        <div class="text-[9px] font-bold text-slate-600 uppercase mb-1 tracking-wider">CONTRACT TERMS & PROVISIONS:</div>
+                        <div id="officialContractBody" class="bg-white border border-slate-300 p-3 rounded-lg text-[9px] font-mono text-slate-800 leading-relaxed whitespace-pre-wrap break-words">
                             --
                         </div>
                     </div>
 
                     <!-- Signatures & Seals Block -->
-                    <div class="border-t border-slate-200 pt-2">
-                        <h4 class="text-[9px] font-bold text-emerald-800 uppercase tracking-wider mb-1.5">Taraf E-İmza Mühürleri & İmzalar</h4>
-                        <div class="grid grid-cols-2 gap-2.5 mb-2">
-                            <div class="bg-slate-50 border border-slate-200 p-1.5 rounded-lg text-center">
-                                <div id="officialSigALabel" class="text-[8px] font-bold text-slate-500 uppercase mb-1">TARAF A İMZASI:</div>
-                                <div id="officialSigAContainer" class="h-10 flex items-center justify-center bg-white border border-dashed border-slate-300 rounded-md p-1 overflow-hidden">
+                    <div class="border-t border-slate-200 pt-3">
+                        <h4 class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider mb-2">Digital Signatures & Verification Seals</h4>
+                        <div class="grid grid-cols-2 gap-3 mb-2">
+                            <div class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center">
+                                <div id="officialSigALabel" class="text-[9px] font-bold text-slate-500 uppercase mb-1">PARTY A SIGNATURE:</div>
+                                <div id="officialSigAContainer" class="h-12 flex items-center justify-center bg-white border border-dashed border-slate-300 rounded-md p-1 overflow-hidden">
                                     <!-- Sig A Img -->
                                 </div>
                             </div>
-                            <div class="bg-slate-50 border border-slate-200 p-1.5 rounded-lg text-center">
-                                <div id="officialSigBLabel" class="text-[8px] font-bold text-slate-500 uppercase mb-1">TARAF B İMZASI:</div>
-                                <div id="officialSigBContainer" class="h-10 flex items-center justify-center bg-white border border-dashed border-slate-300 rounded-md p-1 overflow-hidden">
+                            <div class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center">
+                                <div id="officialSigBLabel" class="text-[9px] font-bold text-slate-500 uppercase mb-1">PARTY B SIGNATURE:</div>
+                                <div id="officialSigBContainer" class="h-12 flex items-center justify-center bg-white border border-dashed border-slate-300 rounded-md p-1 overflow-hidden">
                                     <!-- Sig B Img -->
                                 </div>
                             </div>
                         </div>
 
                         <!-- Hash Seal & Timestamp -->
-                        <div class="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md text-[8px] font-mono text-emerald-800 flex justify-between items-center">
-                            <span>Mühür Hash (SHA-256): <strong id="officialHash" class="text-emerald-950">--</strong></span>
-                            <span>Zaman Damgası: <strong id="officialTime" class="text-emerald-950">--</strong></span>
+                        <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-md text-[9px] font-mono text-emerald-800 flex justify-between items-center">
+                            <span>Verification Seal Hash (SHA-256): <strong id="officialHash" class="text-emerald-950">--</strong></span>
+                            <span>Timestamp: <strong id="officialTime" class="text-emerald-950">--</strong></span>
                         </div>
                     </div>
 
-                    <div class="text-center text-[8px] text-slate-400 border-t border-slate-100 pt-1.5">
-                        ContractGuard Safesign • 5070 Sayılı Elektronik İmza Kanunu Uyarınca Islak İmza Hükmündedir.
+                    <div class="text-center text-[8.5px] text-slate-400 border-t border-slate-100 pt-2">
+                        ContractGuard Legal Verification Engine • Valid & Binding Electronic Record under US ESIGN & EU eIDAS Standards.
                     </div>
                 </div>
             </div>
@@ -319,21 +319,21 @@ Sözleşme yükleniyor...
 
     <!-- Footer -->
     <footer class="max-w-3xl mx-auto w-full text-center py-6 border-t border-darkBorder mt-8 text-xs text-textMuted">
-        &copy; ContractGuard Safesign • Tüm Hakları Saklıdır.
+        &copy; ContractGuard • All Rights Reserved.
     </footer>
 
     <!-- Script Logic -->
     <script>
-        // Dynamic Application Signature Generator for Party A (Uygulama E-İmzası)
+        // Dynamic Application Signature Generator for Party A
         function generateAppSignature(name) {
-            const safeName = (name || 'Taraf A').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const safeName = (name || 'Party A').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="60" viewBox="0 0 220 60">
                 <rect width="220" height="60" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
                 <path d="M 15 32 Q 35 10 55 32 T 95 16 T 135 38 T 175 14 T 205 30" fill="none" stroke="#1d4ed8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M 10 44 Q 105 52 200 40" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
                 <circle cx="198" cy="18" r="7" fill="#166534"/>
                 <path d="M 194 18 L 197 21 L 202 15" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                <text x="100" y="55" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="8.5" font-weight="700" fill="#0f172a" text-anchor="middle">${safeName} (Uygulama İmzası)</text>
+                <text x="100" y="55" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="8.5" font-weight="700" fill="#0f172a" text-anchor="middle">${safeName} (Digital Signature)</text>
             </svg>`;
             return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
         }
@@ -374,11 +374,156 @@ Sözleşme yükleniyor...
             return str;
         }
 
+        // Full Standard Contract Template Generators in English
+        function getStandardTemplate(type, pA, pB, dateStr) {
+            const today = dateStr || new Date().toLocaleDateString('en-US');
+            
+            if (type === 'SOFTWARE_DEV') {
+                return `============================================================
+              SOFTWARE DEVELOPMENT AGREEMENT
+============================================================
+Effective Date: ${today}
+Reference ID: CG-DEV-101
+Governing Law: US - California Law (ESIGN Compliant)
+
+1. PARTIES & PREAMBLE
+------------------------------------------------------------
+This Software Development Agreement ("Agreement") is entered into between:
+CLIENT (PARTY A): ${pA}
+CONTRACTOR / DEVELOPER (PARTY B): ${pB}
+
+2. SCOPE OF WORK & TECHNICAL DELIVERABLES
+------------------------------------------------------------
+Developer agrees to perform professional software engineering services for Client including:
+• Mobile Application and Web Dashboard Design & Engineering.
+• Cloud API Backend Integration, Secure Database Architecture, & Stripe Payment Flow.
+• Delivery of clean, documented source code adhering to modern security standards.
+
+3. COMPENSATION & PAYMENT TERMS
+------------------------------------------------------------
+• Total Agreement Fee: $12,500 USD
+• Payment Milestone Terms: 50% deposit upon execution; 25% upon Beta deliverable; 25% upon final deployment.
+• Overdue Interest: Late invoices overdue by 15 days shall accrue interest at 1.5% per month.
+
+4. INTELLECTUAL PROPERTY & CODE OWNERSHIP
+------------------------------------------------------------
+Upon receipt of final payment, Developer hereby assigns to Client all right, title, and intellectual property ownership worldwide in the custom software deliverables produced under this Agreement.
+
+5. CONFIDENTIALITY & NON-DISCLOSURE
+------------------------------------------------------------
+Both Parties shall maintain strict confidentiality regarding all proprietary technical data, credentials, source code, and business details disclosed during the project.
+
+6. WARRANTIES & SUPPORT
+------------------------------------------------------------
+Developer warrants that all code produced is original and free of malicious software or third-party infringement. Includes 30 days of post-launch maintenance for critical bug fixes.
+
+7. GOVERNING LAW & ELECTRONIC SIGNATURE VALIDITY
+------------------------------------------------------------
+This Agreement is executed electronically pursuant to the US ESIGN Act (15 U.S.C. § 7001) and EU eIDAS Regulation (No 910/2014). Electronic signatures affixed hereto constitute valid and binding legal assent.
+
+IN WITNESS WHEREOF, the Parties execute this Software Development Agreement.`;
+            } else if (type === 'GRAPHIC_DESIGN') {
+                return `============================================================
+           GRAPHIC & LOGO DESIGN CONTRACT
+============================================================
+Effective Date: ${today}
+Reference ID: CG-DSGN-102
+Governing Law: US - New York Law (ESIGN Compliant)
+
+1. PARTIES & PREAMBLE
+------------------------------------------------------------
+This Graphic Design Contract ("Agreement") is entered into between:
+CLIENT / BRAND (PARTY A): ${pA}
+DESIGNER / STUDIO (PARTY B): ${pB}
+
+2. DESIGN DELIVERABLES & SERVICES
+------------------------------------------------------------
+Designer agrees to create vector and visual brand assets including:
+• Complete Brand Identity Suite: Vector Logos (AI, SVG, PNG), Color Palette, & Brand Guidelines.
+• Up to 3 rounds of client revisions included prior to final asset handoff.
+
+3. FEES & PAYMENT SCHEDULE
+------------------------------------------------------------
+• Total Design Fee: $4,800 USD
+• Payment Terms: 50% deposit before project kickoff; balance due upon final vector asset delivery.
+
+4. INTELLECTUAL PROPERTY & PROMOTIONAL RIGHTS
+------------------------------------------------------------
+Upon final payment, Designer assigns full copyright and commercial exploitation rights to Client. Designer retains right to display work in professional online portfolio.
+
+5. GOVERNING LAW & ELECTRONIC SIGNATURE VALIDITY
+------------------------------------------------------------
+Executed electronically under the US ESIGN Act and EU eIDAS Regulations.
+
+IN WITNESS WHEREOF, the Parties accept and execute this Contract electronically.`;
+            } else if (type === 'SOCIAL_MEDIA') {
+                return `============================================================
+         SOCIAL MEDIA MANAGEMENT AGREEMENT
+============================================================
+Effective Date: ${today}
+Reference ID: CG-SMM-103
+Governing Law: EU - GDPR & eIDAS Compliant Standard
+
+1. PARTIES & PREAMBLE
+------------------------------------------------------------
+This Social Media Management Agreement ("Agreement") is entered into between:
+CLIENT (PARTY A): ${pA}
+AGENCY / STRATEGIST (PARTY B): ${pB}
+
+2. MANAGED CHANNELS & CONTENT SCOPE
+------------------------------------------------------------
+Agency shall provide social media strategy, short-form video creation, post scheduling, and community engagement for specified social platforms.
+
+3. RETAINER & CANCELLATION TERMS
+------------------------------------------------------------
+• Monthly Retainer Fee: $3,500 USD / month.
+• Contract Term: 6-Month Initial Term with 30 days written notice required for cancellation.
+
+4. GOVERNING LAW & ELECTRONIC SIGNATURE VALIDITY
+------------------------------------------------------------
+Executed electronically under the US ESIGN Act and EU eIDAS Regulations.
+
+IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
+            } else {
+                return `============================================================
+        INDEPENDENT CONTRACTOR & SERVICES AGREEMENT
+============================================================
+Effective Date: ${today}
+Reference ID: CG-GEN-104
+Governing Law: US - ESIGN & UETA Compliant Standard
+
+1. PARTIES & PREAMBLE
+------------------------------------------------------------
+This Independent Contractor Agreement ("Agreement") is entered into between:
+PARTY A (Client / Issuer): ${pA}
+PARTY B (Contractor / Recipient): ${pB}
+
+2. SERVICES & OBLIGATIONS
+------------------------------------------------------------
+Contractor agrees to perform professional services for Client as detailed in the project statement. Services shall be delivered in a professional, timely, and workmanlike manner.
+
+3. COMPENSATION & PAYMENT TERMS
+------------------------------------------------------------
+Client agrees to compensate Contractor according to the agreed rate schedule. Invoices shall be payable within 15 calendar days of receipt.
+
+4. INTELLECTUAL PROPERTY & CONFIDENTIALITY
+------------------------------------------------------------
+All deliverables created under this Agreement shall belong exclusively to Client upon receipt of full payment. Both Parties agree to maintain strict confidentiality regarding non-public business information.
+
+5. ELECTRONIC SIGNATURE LEGAL VALIDITY
+------------------------------------------------------------
+Executed electronically in compliance with the US ESIGN Act (15 U.S.C. § 7001 et seq.) and EU eIDAS Regulation (No 910/2014). Electronic signatures affixed hereto constitute legal, valid, and binding assent.
+
+IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
+            }
+        }
+
         // Parse Query Parameters safely
         let contractId = 'SAMPLE-101';
-        let partyA = 'Sözleşme Düzenleyicisi';
-        let partyB = 'Alıcı / Müşteri';
-        let title = 'Uzaktan Hizmet ve Gizlilik Sözleşmesi';
+        let partyA = 'Acme Corporation Inc.';
+        let partyB = 'Alex Rivera (Apex Software LLC)';
+        let title = 'Software Development Agreement';
+        let contractType = 'SOFTWARE_DEV';
         let sigA = '';
         let sampleText = '';
 
@@ -393,9 +538,10 @@ Sözleşme yükleniyor...
 
             const urlParams = new URLSearchParams(rawQuery);
             contractId = safeDecode(urlParams.get('id'), 'SAMPLE-101');
-            partyA = safeDecode(urlParams.get('partyA'), 'Sözleşme Düzenleyicisi');
-            partyB = safeDecode(urlParams.get('partyB'), 'Alıcı / Müşteri');
-            title = safeDecode(urlParams.get('title'), 'Uzaktan Hizmet ve Gizlilik Sözleşmesi');
+            partyA = safeDecode(urlParams.get('partyA'), 'Acme Corporation Inc.');
+            partyB = safeDecode(urlParams.get('partyB'), 'Alex Rivera (Apex Software LLC)');
+            title = safeDecode(urlParams.get('title'), 'Software Development Agreement');
+            contractType = safeDecode(urlParams.get('type'), 'SOFTWARE_DEV');
             
             const rawSigA = urlParams.get('sigA');
             if (rawSigA && rawSigA.trim().length > 10) {
@@ -403,30 +549,21 @@ Sözleşme yükleniyor...
             }
             
             const rawTextParam = urlParams.get('text');
-            if (rawTextParam) {
+            if (rawTextParam && rawTextParam.trim().length > 10) {
                 sampleText = safeDecode(rawTextParam);
             }
         } catch (err) {
             console.error('URL params parsing error:', err);
         }
 
-        // Fallback to Uygulama İmzası for Party A if not explicitly passed
+        // Fallback to App Signature for Party A if not explicitly passed
         if (!sigA || sigA.trim().length < 20) {
             sigA = generateAppSignature(partyA);
         }
 
-        if (!sampleText) {
-            sampleText = `1. TARAFLAR VE KONU
-İşbu sözleşme, Taraf A (${partyA}) ile Taraf B (${partyB}) arasında akdedilmiştir.
-
-2. YÜKÜMLÜLÜKLER
-Taraf B, kendisine sunulan hizmet ve koşulları eksiksiz kabul eder. Taraf A, gerekli tüm teknik ve hukuki desteği sağlamakla yükümlüdür.
-
-3. GİZLİLİK VE GÜVENLİK
-Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla paylaşmayacaktır.
-
-4. DİJİTAL ONAY
-İşbu belge, 5070 sayılı Elektronik İmza Kanunu kapsamında uzaktan elektronik imza yöntemiyle mühürlenmiştir.`;
+        // Complete legal text fallback if missing from URL
+        if (!sampleText || sampleText.trim().length < 20) {
+            sampleText = getStandardTemplate(contractType, partyA, partyB);
         }
 
         // Populate Dynamic UI Elements safely
@@ -437,22 +574,22 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
         document.getElementById('partyANameFinal').innerText = partyA;
         document.getElementById('partyBNameFinal').innerText = partyB;
 
-        // Display Party A Signature (Custom drawn e-signature from app or fallback App Signature)
+        // Display Party A Signature
         const partyASigBox = document.getElementById('partyASigBox');
         const finalSigAImg = document.getElementById('finalSigAImg');
         
         if (sigA && !sigA.includes('svg+xml;charset=utf-8')) {
             partyASigBox.innerHTML = `
-                <img src="${sigA}" style="max-height: 40px; max-width: 150px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A E-İmzası" />
-                <span class="text-emerald-400 font-semibold text-[11px] block">✓ E-İmzalandı (Taraf A)</span>
+                <img src="${sigA}" style="max-height: 40px; max-width: 150px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Party A Signature" />
+                <span class="text-emerald-400 font-semibold text-[11px] block">✓ Digitally Signed (Party A)</span>
             `;
-            finalSigAImg.innerHTML = `<img src="${sigA}" style="max-height: 42px; max-width: 150px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A E-İmzası" />`;
+            finalSigAImg.innerHTML = `<img src="${sigA}" style="max-height: 42px; max-width: 150px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Party A Signature" />`;
         } else {
             partyASigBox.innerHTML = `
-                <img src="${sigA}" style="max-height: 36px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A Uygulama İmzası" />
-                <span class="text-emerald-400 font-semibold text-[11px] block">✓ Uygulama İmzalı</span>
+                <img src="${sigA}" style="max-height: 36px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Party A App Signature" />
+                <span class="text-emerald-400 font-semibold text-[11px] block">✓ App Signed</span>
             `;
-            finalSigAImg.innerHTML = `<img src="${sigA}" style="max-height: 40px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A Uygulama İmzası" />`;
+            finalSigAImg.innerHTML = `<img src="${sigA}" style="max-height: 40px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Party A App Signature" />`;
         }
 
         document.getElementById('contractText').innerText = sampleText;
@@ -517,17 +654,17 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             if (signaturePad.isEmpty() || !agreeCheck.checked) return;
 
             partyBSigDataUrl = signaturePad.toDataURL('image/png');
-            const timestamp = new Date().toLocaleString('tr-TR');
+            const timestamp = new Date().toLocaleString('en-US');
             const fakeHash = 'SHA256-SEAL-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now();
 
-            // Update UI with B signature
+            // Update UI with Party B signature
             document.getElementById('partyBSigStatus').className = 'mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 font-semibold flex items-center gap-2';
             document.getElementById('partyBSigStatus').innerHTML = `
-                <img src="${partyBSigDataUrl}" style="max-height: 32px; max-width: 120px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf B İmza" />
-                <span>✓ E-İmzalandı</span>
+                <img src="${partyBSigDataUrl}" style="max-height: 32px; max-width: 120px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Party B Signature" />
+                <span>✓ Digitally Signed</span>
             `;
 
-            document.getElementById('finalSigBImg').innerHTML = `<img src="${partyBSigDataUrl}" style="max-height: 40px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf B İmza" />`;
+            document.getElementById('finalSigBImg').innerHTML = `<img src="${partyBSigDataUrl}" style="max-height: 40px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Party B Signature" />`;
             document.getElementById('dualSignatureBlock').classList.remove('hidden');
 
             document.getElementById('completedHash').innerText = fakeHash;
@@ -542,20 +679,20 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             document.getElementById('officialHash').innerText = fakeHash;
             document.getElementById('officialTime').innerText = timestamp;
 
-            document.getElementById('officialSigALabel').innerText = `TARAF A İMZASI (${partyA}):`;
-            document.getElementById('officialSigBLabel').innerText = `TARAF B İMZASI (${partyB}):`;
+            document.getElementById('officialSigALabel').innerText = `PARTY A SIGNATURE (${partyA}):`;
+            document.getElementById('officialSigBLabel').innerText = `PARTY B SIGNATURE (${partyB}):`;
 
             if (sigA && sigA.trim().length > 20) {
-                document.getElementById('officialSigAContainer').innerHTML = `<img src="${sigA}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Taraf A Uygulama İmzası" />`;
+                document.getElementById('officialSigAContainer').innerHTML = `<img src="${sigA}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Party A Signature" />`;
             } else {
                 sigA = generateAppSignature(partyA);
-                document.getElementById('officialSigAContainer').innerHTML = `<img src="${sigA}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Taraf A Uygulama İmzası" />`;
+                document.getElementById('officialSigAContainer').innerHTML = `<img src="${sigA}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Party A Signature" />`;
             }
 
             if (partyBSigDataUrl && partyBSigDataUrl.length > 20) {
-                document.getElementById('officialSigBContainer').innerHTML = `<img src="${partyBSigDataUrl}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Taraf B İmza" />`;
+                document.getElementById('officialSigBContainer').innerHTML = `<img src="${partyBSigDataUrl}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Party B Signature" />`;
             } else {
-                document.getElementById('officialSigBContainer').innerHTML = `<span style="color: #15803d; font-weight: bold; font-size: 12px;">✓ E-İmzalandı (Taraf B)</span>`;
+                document.getElementById('officialSigBContainer').innerHTML = `<span style="color: #15803d; font-weight: bold; font-size: 12px;">✓ Digitally Signed (Party B)</span>`;
             }
 
             // Hide Signature Form, Show Success State & Document Preview
@@ -565,12 +702,12 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             window.scrollTo({ top: document.getElementById('successState').offsetTop - 20, behavior: 'smooth' });
         });
 
-        // Universal High-Definition Single-Page PDF Generator Engine
+        // Universal Single-Page & Multi-Page PDF Generator Engine
         function generatePdfDocument(action = 'download') {
             const downloadBtn = document.getElementById('downloadPdfBtn');
             const originalBtnHtml = downloadBtn ? downloadBtn.innerHTML : '';
             if (downloadBtn && action === 'download') {
-                downloadBtn.innerHTML = '<span>⏳</span><span>PDF İndiriliyor...</span>';
+                downloadBtn.innerHTML = '<span>⏳</span><span>Downloading PDF...</span>';
                 downloadBtn.disabled = true;
             }
 
@@ -588,7 +725,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                 position: fixed;
                 top: 0;
                 left: 0;
-                width: 760px;
+                width: 780px;
                 background-color: #ffffff !important;
                 background: #ffffff !important;
                 color: #0f172a !important;
@@ -605,11 +742,11 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
 
             document.body.appendChild(cleanDoc);
 
-            const cleanTitle = (title || 'E_Imzali_Sozlesme').replace(/[^a-zA-Z0-9]/g, '_');
-            const safeFileName = `Sozlesme_${cleanTitle}.pdf`;
+            const cleanTitle = (title || 'Signed_Contract').replace(/[^a-zA-Z0-9]/g, '_');
+            const safeFileName = `Contract_${cleanTitle}.pdf`;
 
             const opt = {
-                margin:       [4, 4, 4, 4],
+                margin:       [6, 6, 6, 6],
                 filename:     safeFileName,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
@@ -669,7 +806,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                                 await navigator.share({
                                     title: title,
-                                    text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
+                                    text: `ContractGuard e-signed agreement (${title}).`,
                                     files: [file]
                                 });
                                 cleanup();
@@ -677,7 +814,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                                 const cleanShareUrl = window.location.origin + window.location.pathname + '#id=' + encodeURIComponent(contractId) + '&title=' + encodeURIComponent(title) + '&partyA=' + encodeURIComponent(partyA) + '&partyB=' + encodeURIComponent(partyB);
                                 await navigator.share({
                                     title: title,
-                                    text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
+                                    text: `ContractGuard e-signed agreement (${title}).`,
                                     url: cleanShareUrl
                                 });
                                 cleanup();
@@ -711,7 +848,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             }
         }
 
-        // PDF Download Button (Generates and downloads PDF file directly onto receiver's device)
+        // PDF Download Button
         document.getElementById('downloadPdfBtn').addEventListener('click', () => {
             generatePdfDocument('download');
         });

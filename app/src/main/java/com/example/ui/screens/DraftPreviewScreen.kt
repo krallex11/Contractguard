@@ -117,6 +117,12 @@ fun DraftPreviewScreen(
     val encodedTitle = remember(contract.title) { java.net.URLEncoder.encode(contract.title, "UTF-8") }
     val encodedPartyA = remember(contract.partyA) { java.net.URLEncoder.encode(contract.partyA, "UTF-8") }
     val encodedPartyB = remember(contract.partyB) { java.net.URLEncoder.encode(contract.partyB, "UTF-8") }
+    val encodedType = remember(contract.type) { java.net.URLEncoder.encode(contract.type, "UTF-8") }
+    val encodedText = remember(contract.generatedDraftText) {
+        if (!contract.generatedDraftText.isNullOrEmpty()) {
+            try { java.net.URLEncoder.encode(contract.generatedDraftText, "UTF-8") } catch (e: Exception) { "" }
+        } else ""
+    }
 
     val encodedSigA = remember(contract.signatureBase64) {
         if (!contract.signatureBase64.isNullOrEmpty()) {
@@ -124,9 +130,9 @@ fun DraftPreviewScreen(
         } else ""
     }
 
-    // Short, clean & concise remote signing URL with compact dynamic signature
-    val remoteSigningLink = remember(webHostBaseUrl, contract.id, encodedPartyA, encodedPartyB, encodedTitle, encodedSigA) {
-        "$webHostBaseUrl/#id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
+    // Complete remote signing URL with contract type, full draft text, and dynamic signature
+    val remoteSigningLink = remember(webHostBaseUrl, contract.id, encodedPartyA, encodedPartyB, encodedTitle, encodedType, encodedText, encodedSigA) {
+        "$webHostBaseUrl/#id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle&type=$encodedType${if (encodedText.isNotEmpty()) "&text=$encodedText" else ""}${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
     }
     val hasUserSigned = !contract.signatureBase64.isNullOrEmpty() || contract.status == "SIGNED"
 
@@ -169,7 +175,7 @@ fun DraftPreviewScreen(
                             )
                         )
                         Text(
-                            text = "Sözleşme Taslağı & İnceleme",
+                            text = "Contract Review & Execution",
                             fontSize = 11.5.sp,
                             color = SleekTextMuted
                         )
@@ -179,7 +185,7 @@ fun DraftPreviewScreen(
                     IconButton(onClick = onBackClicked, modifier = Modifier.testTag("back_button")) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Geri",
+                            contentDescription = "Back",
                             tint = SleekLimeGreenPrimary
                         )
                     }
@@ -190,14 +196,14 @@ fun DraftPreviewScreen(
                             if (hasUserSigned) {
                                 onExportAndSharePdf("")
                             } else {
-                                Toast.makeText(context, "Lütfen önce kendi imzanızı atın.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Please sign the contract first.", Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.testTag("share_pdf_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "PDF Paylaş",
+                            contentDescription = "Share PDF",
                             tint = SleekLimeGreenPrimary
                         )
                     }
@@ -207,7 +213,7 @@ fun DraftPreviewScreen(
                             if (hasUserSigned) {
                                 onDownloadPdf()
                             } else {
-                                Toast.makeText(context, "Lütfen önce kendi imzanızı atın.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Please sign the contract first.", Toast.LENGTH_SHORT).show()
                             }
                         },
                         enabled = hasUserSigned,
@@ -215,7 +221,7 @@ fun DraftPreviewScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PictureAsPdf,
-                            contentDescription = "PDF İndir",
+                            contentDescription = "Download PDF",
                             tint = if (hasUserSigned) SleekLimeGreenPrimary else SleekTextMuted
                         )
                     }
@@ -226,7 +232,7 @@ fun DraftPreviewScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Sil",
+                            contentDescription = "Delete",
                             tint = SleekRedAlert
                         )
                     }
@@ -273,13 +279,13 @@ fun DraftPreviewScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (hasUserSigned) "E-İmzalı Sözleşme Belgesi" else "Sözleşme Taslağı Onay Bekliyor",
+                                text = if (hasUserSigned) "E-Signed Legal Record" else "Contract Draft Pending Execution",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                                 color = SleekTextWhite
                             )
                             Text(
-                                text = "5070 Sayılı Elektronik İmza Kanunu Uyumlu • SHA-256 Doğrulamalı",
+                                text = "US ESIGN Act & EU eIDAS Compliant • SHA-256 Audit Trail",
                                 fontSize = 11.sp,
                                 color = SleekTextMuted
                             )
@@ -304,13 +310,13 @@ fun DraftPreviewScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "SÖZLEŞME METNİ",
+                                text = "CONTRACT TERMS & PROVISIONS",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 color = SleekLimeGreenPrimary,
                                 letterSpacing = 0.5.sp
                             )
-                            val dateStr = SimpleDateFormat("dd.MM.yyyy", Locale("tr")).format(Date(contract.createdAt))
+                            val dateStr = SimpleDateFormat("MM/dd/yyyy", Locale.US).format(Date(contract.createdAt))
                             Text(
                                 text = dateStr,
                                 fontSize = 11.sp,
@@ -354,7 +360,7 @@ fun DraftPreviewScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Kendi İmzanız (Taraf A - Düzenleyen)",
+                                    text = "Your Electronic Signature (Party A - Issuer)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     color = SleekTextWhite
@@ -363,7 +369,7 @@ fun DraftPreviewScreen(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = "İmzalayan: ${contract.partyA}",
+                                text = "Signatory: ${contract.partyA}",
                                 fontSize = 12.sp,
                                 color = SleekTextWhite,
                                 fontWeight = FontWeight.SemiBold
@@ -382,7 +388,7 @@ fun DraftPreviewScreen(
                                 ) {
                                     Image(
                                         bitmap = partyASigBitmap,
-                                        contentDescription = "Taraf A İmza Görseli",
+                                        contentDescription = "Party A Signature Image",
                                         modifier = Modifier.fillMaxHeight()
                                     )
                                 }
@@ -390,9 +396,9 @@ fun DraftPreviewScreen(
 
                             if (contract.signatureTimestamp != null) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                val signDate = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale("tr")).format(Date(contract.signatureTimestamp))
+                                val signDate = SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.US).format(Date(contract.signatureTimestamp))
                                 Text(
-                                    text = "İmza Tarihi: $signDate",
+                                    text = "Signed Date: $signDate",
                                     fontSize = 11.5.sp,
                                     color = SleekTextMuted
                                 )
@@ -402,7 +408,7 @@ fun DraftPreviewScreen(
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = SleekDarkCardBorder)
 
                                 Text(
-                                    text = "Alıcı / Müşteri İmzası (Taraf B): ${contract.partyB}",
+                                    text = "Recipient Signature (Party B): ${contract.partyB}",
                                     fontSize = 12.sp,
                                     color = SleekLimeGreenPrimary,
                                     fontWeight = FontWeight.Bold
@@ -421,16 +427,16 @@ fun DraftPreviewScreen(
                                     ) {
                                         Image(
                                             bitmap = partyBSigBitmap,
-                                            contentDescription = "Taraf B İmza Görseli",
+                                            contentDescription = "Party B Signature Image",
                                             modifier = Modifier.fillMaxHeight()
                                         )
                                     }
                                 }
 
                                 if (contract.partyBSignatureTimestamp != null) {
-                                    val partyBSignDate = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale("tr")).format(Date(contract.partyBSignatureTimestamp))
+                                    val partyBSignDate = SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.US).format(Date(contract.partyBSignatureTimestamp))
                                     Text(
-                                        text = "Alıcı İmza Tarihi: $partyBSignDate (Web Portalı İle Onaylandı)",
+                                        text = "Recipient Signed Date: $partyBSignDate (Verified via Portal)",
                                         fontSize = 11.5.sp,
                                         color = SleekTextMuted
                                     )
@@ -448,7 +454,7 @@ fun DraftPreviewScreen(
                                         .padding(10.dp)
                                 ) {
                                     Text(
-                                        text = "SHA-256 Mühür: ${contract.signatureHash}",
+                                        text = "SHA-256 Audit Seal: ${contract.signatureHash}",
                                         fontSize = 10.5.sp,
                                         fontFamily = FontFamily.Monospace,
                                         color = SleekLimeGreenPrimary
@@ -491,13 +497,13 @@ fun DraftPreviewScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "E-İmzalı PDF Belgeniz",
+                                    text = "E-Signed PDF Document",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
                                     color = SleekTextWhite
                                 )
                                 Text(
-                                    text = if (hasUserSigned) "Sözleşmeyi cihazınıza indirin veya paylaşın." else "İmzanızı attıktan sonra PDF indirilebilir.",
+                                    text = if (hasUserSigned) "Download or share the official PDF contract directly." else "PDF download will unlock after applying your signature.",
                                     fontSize = 11.5.sp,
                                     color = SleekTextMuted
                                 )
@@ -515,7 +521,7 @@ fun DraftPreviewScreen(
                                     if (hasUserSigned) {
                                         onDownloadPdf()
                                     } else {
-                                        Toast.makeText(context, "Lütfen önce kendi imzanızı atın.", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Please sign the contract first.", Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 enabled = hasUserSigned,
@@ -537,7 +543,7 @@ fun DraftPreviewScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("PDF İndir", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Download PDF", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
 
                             OutlinedButton(
@@ -545,7 +551,7 @@ fun DraftPreviewScreen(
                                     if (hasUserSigned) {
                                         onExportAndSharePdf("")
                                     } else {
-                                        Toast.makeText(context, "Lütfen önce kendi imzanızı atın.", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Please sign the contract first.", Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 enabled = hasUserSigned,
@@ -563,7 +569,7 @@ fun DraftPreviewScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("PDF Paylaş", color = if (hasUserSigned) SleekTextWhite else SleekTextMuted, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text("Share PDF", color = if (hasUserSigned) SleekTextWhite else SleekTextMuted, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                             }
                         }
                     }
@@ -594,7 +600,7 @@ fun DraftPreviewScreen(
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = "Uzaktan E-İmza Bağlantısı (Alıcı)",
+                                    text = "Remote E-Signing Link (Recipient)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     color = SleekTextWhite
@@ -617,7 +623,7 @@ fun DraftPreviewScreen(
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "Alıcı İmzalandı",
+                                        text = "Recipient Signed",
                                         fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = SleekLimeGreenPrimary
@@ -639,7 +645,7 @@ fun DraftPreviewScreen(
                                     .padding(12.dp)
                             ) {
                                 Text(
-                                    text = "🔒 Kendi imzanızı attıktan sonra Alıcı / Müşteri için uzaktan imza bağlantısı ve QR kodu otomatik olarak aktifleşecektir.",
+                                    text = "🔒 Applying your own signature unlocks the remote signing link & QR code for the recipient.",
                                     fontSize = 12.sp,
                                     color = SleekTextMuted,
                                     lineHeight = 17.sp
@@ -648,7 +654,7 @@ fun DraftPreviewScreen(
                         } else {
                             // Unlocked Active State
                             Text(
-                                text = "${contract.partyB} kullanıcısının uygulamayı yüklemeden web ortamında sözleşmeyi inceleyip imzalaması için aşağıdaki bağlantıyı paylaşın:",
+                                text = "Share the link below with ${contract.partyB} to let them review and sign the agreement via web portal:",
                                 fontSize = 11.5.sp,
                                 color = SleekTextMuted,
                                 lineHeight = 16.sp
@@ -683,7 +689,7 @@ fun DraftPreviewScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Language,
-                                        contentDescription = "Domain Düzenle",
+                                        contentDescription = "Edit Domain",
                                         tint = SleekTextMuted,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -700,7 +706,7 @@ fun DraftPreviewScreen(
                                     onClick = {
                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                         clipboard.setPrimaryClip(ClipData.newPlainText("Signing Link", remoteSigningLink))
-                                        Toast.makeText(context, "Uzaktan imza bağlantısı kopyalandı!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Signing link copied to clipboard!", Toast.LENGTH_SHORT).show()
                                     },
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1f).testTag("copy_remote_link_button")
@@ -712,17 +718,17 @@ fun DraftPreviewScreen(
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Linki Kopyala", fontSize = 11.sp, color = SleekTextWhite)
+                                    Text("Copy Link", fontSize = 11.sp, color = SleekTextWhite)
                                 }
 
                                 OutlinedButton(
                                     onClick = {
                                         val sendIntent: Intent = Intent().apply {
                                             action = Intent.ACTION_SEND
-                                            putExtra(Intent.EXTRA_TEXT, "Lütfen '${contract.title}' sözleşmesini inceleyip imzalamak için bağlantıyı açın:\n$remoteSigningLink")
+                                            putExtra(Intent.EXTRA_TEXT, "Please review and sign the contract '${contract.title}' using this link:\n$remoteSigningLink")
                                             type = "text/plain"
                                         }
-                                        val shareIntent = Intent.createChooser(sendIntent, "Uzaktan İmza Bağlantısını Paylaş")
+                                        val shareIntent = Intent.createChooser(sendIntent, "Share Remote Signing Link")
                                         context.startActivity(shareIntent)
                                     },
                                     shape = RoundedCornerShape(12.dp),
@@ -735,7 +741,7 @@ fun DraftPreviewScreen(
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Linki Paylaş", fontSize = 11.sp, color = SleekTextWhite)
+                                    Text("Share Link", fontSize = 11.sp, color = SleekTextWhite)
                                 }
 
                                 OutlinedButton(
@@ -750,7 +756,7 @@ fun DraftPreviewScreen(
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("QR Göster", fontSize = 11.sp, color = SleekTextWhite)
+                                    Text("Show QR", fontSize = 11.sp, color = SleekTextWhite)
                                 }
                             }
                         }
@@ -770,7 +776,7 @@ fun DraftPreviewScreen(
             onDismissRequest = { showQrDialog = false },
             title = {
                 Text(
-                    text = "Uzaktan İmza QR Kodu",
+                    text = "Remote Signing QR Code",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = SleekTextWhite
@@ -779,7 +785,7 @@ fun DraftPreviewScreen(
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "${contract.partyB} kullanıcısının telefon kamerasından bu QR kodu okutarak sözleşme imzalama sayfasına erişmesini sağlayın.",
+                        text = "Have ${contract.partyB} scan this QR code with their mobile camera to open the e-signature portal.",
                         fontSize = 12.sp,
                         color = SleekTextMuted
                     )
@@ -803,7 +809,7 @@ fun DraftPreviewScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "5070 Sayılı Kanuna Uygundur",
+                        text = "ESIGN Act & eIDAS Compliant",
                         fontSize = 11.sp,
                         color = SleekLimeGreenPrimary,
                         fontWeight = FontWeight.SemiBold
@@ -815,7 +821,7 @@ fun DraftPreviewScreen(
                     onClick = { showQrDialog = false },
                     colors = ButtonDefaults.buttonColors(containerColor = SleekLimeGreenPrimary, contentColor = SleekLimeGreenOnPrimary)
                 ) {
-                    Text("Kapat")
+                    Text("Close")
                 }
             },
             containerColor = SleekDarkSurface
@@ -828,7 +834,7 @@ fun DraftPreviewScreen(
             onDismissRequest = { showDomainDialog = false },
             title = {
                 Text(
-                    text = "Web Hosting Domain Ayarla",
+                    text = "Web Hosting Domain Configuration",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = SleekTextWhite
@@ -837,7 +843,7 @@ fun DraftPreviewScreen(
             text = {
                 Column {
                     Text(
-                        text = "Vercel üretim alan adınızı (örn: https://contractguard-5511.vercel.app) giriniz.\n\nNot: '-git-main-' veya preview linkleri Vercel koruması nedeniyle giriş ekranına yönlendirebilir.",
+                        text = "Enter your primary domain (e.g., https://contractguard-5511.vercel.app).",
                         fontSize = 12.sp,
                         color = SleekTextMuted
                     )
@@ -845,7 +851,7 @@ fun DraftPreviewScreen(
                     OutlinedTextField(
                         value = tempDomainInput,
                         onValueChange = { tempDomainInput = it },
-                        placeholder = { Text("https://sizin-projeniz.vercel.app", fontSize = 12.sp, color = SleekTextMuted) },
+                        placeholder = { Text("https://your-domain.vercel.app", fontSize = 12.sp, color = SleekTextMuted) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -867,12 +873,12 @@ fun DraftPreviewScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = SleekLimeGreenPrimary, contentColor = SleekLimeGreenOnPrimary),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Kaydet")
+                    Text("Save")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDomainDialog = false }) {
-                    Text("İptal", color = SleekTextMuted)
+                    Text("Cancel", color = SleekTextMuted)
                 }
             },
             containerColor = SleekDarkSurface
@@ -883,8 +889,8 @@ fun DraftPreviewScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Sözleşme Silinsin mi?", fontWeight = FontWeight.Bold, color = SleekTextWhite) },
-            text = { Text("Bu işlem sözleşmeyi cihazınızdan kalıcı olarak silecektir.", fontSize = 13.sp, color = SleekTextMuted) },
+            title = { Text("Delete Contract?", fontWeight = FontWeight.Bold, color = SleekTextWhite) },
+            text = { Text("This action will permanently delete the contract from your device.", fontSize = 13.sp, color = SleekTextMuted) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -893,12 +899,12 @@ fun DraftPreviewScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = SleekRedAlert)
                 ) {
-                    Text("Kalıcı Olarak Sil")
+                    Text("Delete Permanently")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("İptal", color = SleekTextMuted)
+                    Text("Cancel", color = SleekTextMuted)
                 }
             },
             containerColor = SleekDarkSurface

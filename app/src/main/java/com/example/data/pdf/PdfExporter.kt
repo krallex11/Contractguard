@@ -99,20 +99,20 @@ object PdfExporter {
                 color = primaryBlue
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             }
-            canvas.drawText("CONTRACTGUARD E-İMZALI RESMİ SÖZLEŞME BELGESİ", 42f, y + 18f, bannerTitlePaint)
+            canvas.drawText("CONTRACTGUARD OFFICIAL E-SIGNED CONTRACT RECORD", 42f, y + 18f, bannerTitlePaint)
 
-            val dateStr = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr")).format(Date(contract.createdAt))
+            val dateStr = SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.US).format(Date(contract.createdAt))
             val metaPaint = Paint().apply {
                 isAntiAlias = true
                 textSize = 7.5f
                 color = accentBlue
             }
-            canvas.drawText("Dijital Güvenlik Mührü • Uçtan Uca Şifreli • Oluşturulma: $dateStr", 42f, y + 32f, metaPaint)
+            canvas.drawText("Digital Security Seal • End-to-End Encrypted • Created: $dateStr", 42f, y + 32f, metaPaint)
 
             y += 54f
 
             // 2. Document Title & Type
-            canvas.drawText(contract.title.uppercase(Locale("tr")), 30f, y, titlePaint)
+            canvas.drawText(contract.title.uppercase(Locale.US), 30f, y, titlePaint)
             y += 14f
 
             val typePaint = Paint().apply {
@@ -171,7 +171,7 @@ object PdfExporter {
             y += 14f
 
             // 4. E-Signature Header
-            canvas.drawText("E-İMZA VE TARAFLARIN ONAYI / ELECTRONIC SIGNATURE & ASSENT", 30f, y, subHeaderPaint)
+            canvas.drawText("ELECTRONIC SIGNATURES & ASSENT RECORD", 30f, y, subHeaderPaint)
             y += 14f
 
             // 5. Dual Signature Boxes (Side-by-Side)
@@ -214,7 +214,7 @@ object PdfExporter {
                 color = textMuted
             }
 
-            canvas.drawText("TARAF A (DÜZENLEYEN)", leftBoxX + 12f, y + 16f, labelMutedPaint)
+            canvas.drawText("PARTY A (ISSUER)", leftBoxX + 12f, y + 16f, labelMutedPaint)
             canvas.drawText(contract.partyA, leftBoxX + 12f, y + 28f, labelBoldPaint)
 
             if (!contract.signatureBase64.isNull_or_empty()) {
@@ -230,10 +230,10 @@ object PdfExporter {
                         color = greenSuccess
                         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                     }
-                    canvas.drawText("✓ Dijital İmzalandı", leftBoxX + 12f, y + 112f, statusPaint)
+                    canvas.drawText("✓ Digitally Signed", leftBoxX + 12f, y + 112f, statusPaint)
                     if (contract.signatureTimestamp != null) {
-                        val sDate = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr")).format(Date(contract.signatureTimestamp))
-                        canvas.drawText("Tarih: $sDate", leftBoxX + 120f, y + 112f, labelMutedPaint)
+                        val sDate = SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.US).format(Date(contract.signatureTimestamp))
+                        canvas.drawText("Date: $sDate", leftBoxX + 120f, y + 112f, labelMutedPaint)
                     }
                 }
             } else {
@@ -243,11 +243,11 @@ object PdfExporter {
                     color = Color.parseColor("#D97706")
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
                 }
-                canvas.drawText("[Taraf A İmzası Bekleniyor]", leftBoxX + 12f, y + 70f, pendingPaint)
+                canvas.drawText("[Party A Signature Pending]", leftBoxX + 12f, y + 70f, pendingPaint)
             }
 
             // Party B Text Details
-            canvas.drawText("TARAF B (ALICI / UZAKTAN İMZA)", rightBoxX + 12f, y + 16f, labelMutedPaint)
+            canvas.drawText("PARTY B (RECIPIENT / SIGNATORY)", rightBoxX + 12f, y + 16f, labelMutedPaint)
             canvas.drawText(contract.partyB, rightBoxX + 12f, y + 28f, labelBoldPaint)
 
             if (!contract.partyBSignatureBase64.isNullOrEmpty()) {
@@ -263,14 +263,14 @@ object PdfExporter {
                         color = greenSuccess
                         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                     }
-                    canvas.drawText("✓ Uzaktan İmzalandı", rightBoxX + 12f, y + 112f, statusPaint)
+                    canvas.drawText("✓ Remotely Signed", rightBoxX + 12f, y + 112f, statusPaint)
                     if (contract.partyBSignatureTimestamp != null) {
-                        val sDate = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr")).format(Date(contract.partyBSignatureTimestamp))
-                        canvas.drawText("Tarih: $sDate", rightBoxX + 120f, y + 112f, labelMutedPaint)
+                        val sDate = SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.US).format(Date(contract.partyBSignatureTimestamp))
+                        canvas.drawText("Date: $sDate", rightBoxX + 120f, y + 112f, labelMutedPaint)
                     }
                 }
             } else {
-                // Render empty dashed signature box rectangle for Alıcı / Müşteri
+                // Render empty dashed signature box rectangle for Party B
                 val emptyBoxPaint = Paint().apply {
                     isAntiAlias = true
                     style = Paint.Style.STROKE
@@ -287,8 +287,8 @@ object PdfExporter {
                     color = Color.parseColor("#64748B")
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
                 }
-                canvas.drawText("Alıcı / Müşteri İmzası İçin Ayrılmıştır", rightBoxX + 22f, y + 62f, boxHintPaint)
-                canvas.drawText("(Uzaktan imza bağlantısı ile doldurulacaktır)", rightBoxX + 18f, y + 74f, labelMutedPaint)
+                canvas.drawText("Reserved for Recipient Signature", rightBoxX + 22f, y + 62f, boxHintPaint)
+                canvas.drawText("(Will be populated via remote link)", rightBoxX + 18f, y + 74f, labelMutedPaint)
 
                 val pendingPaint = Paint().apply {
                     isAntiAlias = true
@@ -296,7 +296,7 @@ object PdfExporter {
                     color = Color.parseColor("#D97706")
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 }
-                canvas.drawText("⏳ Alıcı İmzası Bekleniyor", rightBoxX + 12f, y + 112f, pendingPaint)
+                canvas.drawText("⏳ Recipient Signature Pending", rightBoxX + 12f, y + 112f, pendingPaint)
             }
 
             y += boxHeight + 16f
@@ -316,7 +316,7 @@ object PdfExporter {
                 color = Color.parseColor("#334155")
                 typeface = Typeface.MONOSPACE
             }
-            canvas.drawText("Güvenlik Doğrulama Kodu (SHA-256 Hash): $hash", 38f, y + 17f, hashPaint)
+            canvas.drawText("Verification Seal Hash (SHA-256): $hash", 38f, y + 17f, hashPaint)
 
             document.finishPage(page)
 
@@ -324,7 +324,7 @@ object PdfExporter {
             val pdfDir = File(context.cacheDir, "shared_pdfs")
             if (!pdfDir.exists()) pdfDir.mkdirs()
 
-            val pdfFile = File(pdfDir, "Sözlesme_${contract.type}_${contract.id}.pdf")
+            val pdfFile = File(pdfDir, "Contract_${contract.type}_${contract.id}.pdf")
             val outputStream = FileOutputStream(pdfFile)
             document.writeTo(outputStream)
             document.close()
@@ -370,10 +370,10 @@ object PdfExporter {
                     }
                 }
             }
-            "İndirilenler/ContractGuard/$fileName"
+            "Downloads/ContractGuard/$fileName"
         } catch (e: Exception) {
             e.printStackTrace()
-            "İndirilenler klasörü"
+            "Downloads folder"
         }
     }
 
@@ -387,22 +387,22 @@ object PdfExporter {
                 if (recipientEmail.isNotEmpty()) {
                     putExtra(Intent.EXTRA_EMAIL, arrayOf(recipientEmail))
                 }
-                putExtra(Intent.EXTRA_SUBJECT, "ContractGuard: $contractTitle (E-İmzalı PDF)")
+                putExtra(Intent.EXTRA_SUBJECT, "ContractGuard: $contractTitle (E-Signed PDF)")
                 putExtra(
                     Intent.EXTRA_TEXT,
-                    "Merhaba,\n\nContractGuard e-imza sistemi üzerinden onaylanan '$contractTitle' başlıklı sözleşmenizin e-imzalı güvenli PDF dosyası ekte bilgilerinize sunulmıştır.\n\nİyi çalışmalar."
+                    "Hello,\n\nPlease find attached the electronically signed, secure PDF copy of the contract '$contractTitle' executed via ContractGuard.\n\nBest regards."
                 )
                 putExtra(Intent.EXTRA_STREAM, contentUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            val chooser = Intent.createChooser(emailIntent, "Sözleşmeyi E-Posta ile Gönder")
+            val chooser = Intent.createChooser(emailIntent, "Send Contract via Email")
             chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "E-posta istemcisi başlatılamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Could not launch email client.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -413,29 +413,29 @@ object PdfExporter {
 
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"
-                putExtra(Intent.EXTRA_SUBJECT, "ContractGuard: $contractTitle (E-İmzalı PDF)")
+                putExtra(Intent.EXTRA_SUBJECT, "ContractGuard: $contractTitle (E-Signed PDF)")
                 putExtra(
                     Intent.EXTRA_TEXT,
-                    "ContractGuard üzerinden e-imza ile onaylanmış '$contractTitle' sözleşme belgesi ekte yer almaktadır."
+                    "Attached is the electronically signed contract document '$contractTitle' verified via ContractGuard."
                 )
                 putExtra(Intent.EXTRA_STREAM, contentUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            val chooser = Intent.createChooser(shareIntent, "E-İmzalı PDF Belgesini Paylaş")
+            val chooser = Intent.createChooser(shareIntent, "Share E-Signed PDF Document")
             chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Paylaşım başlatılamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Could not launch share sheet.", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun openAndDownloadPdf(context: Context, pdfFile: File, contractTitle: String) {
         try {
             val savedPathLocation = savePdfToPublicDownloads(context, pdfFile, contractTitle)
-            Toast.makeText(context, "PDF kaydedildi: $savedPathLocation", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "PDF saved to: $savedPathLocation", Toast.LENGTH_LONG).show()
 
             val authority = "${context.packageName}.fileprovider"
             val contentUri: Uri = FileProvider.getUriForFile(context, authority, pdfFile)
@@ -446,7 +446,7 @@ object PdfExporter {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 
-            val chooser = Intent.createChooser(viewIntent, "$contractTitle - PDF Aç / İncele")
+            val chooser = Intent.createChooser(viewIntent, "$contractTitle - Open PDF")
             chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
