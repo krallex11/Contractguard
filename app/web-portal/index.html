@@ -570,125 +570,37 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             const downloadBtn = document.getElementById('downloadPdfBtn');
             const originalBtnHtml = downloadBtn ? downloadBtn.innerHTML : '';
             if (downloadBtn && action === 'download') {
-                downloadBtn.innerHTML = '<span>⏳</span><span>PDF Hazırlanıyor...</span>';
+                downloadBtn.innerHTML = '<span>⏳</span><span>PDF İndiriliyor...</span>';
                 downloadBtn.disabled = true;
             }
 
-            const docIdVal = document.getElementById('officialDocId')?.innerText || ('ID: #' + (contractId || '101'));
-            const docTitleVal = title || 'Resmi E-İmzalı Sözleşme';
-            const partyAVal = partyA || 'Taraf A';
-            const partyBVal = partyB || 'Taraf B';
-            const contractContentVal = sampleText || '';
-            const hashVal = document.getElementById('officialHash')?.innerText || ('SHA256-SEAL-' + Math.random().toString(36).substring(2, 10).toUpperCase());
-            const timeStrVal = document.getElementById('officialTime')?.innerText || new Date().toLocaleString('tr-TR');
-
-            let sigAImgHtml = '';
-            if (sigA && sigA.trim().length > 20) {
-                sigAImgHtml = `<img src="${sigA}" style="max-height: 48px; max-width: 180px; object-fit: contain; margin: 0 auto; display: block;" alt="Taraf A Uygulama İmzası" />`;
-            } else {
-                sigA = generateAppSignature(partyAVal);
-                sigAImgHtml = `<img src="${sigA}" style="max-height: 48px; max-width: 180px; object-fit: contain; margin: 0 auto; display: block;" alt="Taraf A Uygulama İmzası" />`;
+            const sourceCard = document.getElementById('officialDocCard');
+            if (!sourceCard) {
+                if (downloadBtn) downloadBtn.innerHTML = originalBtnHtml;
+                window.print();
+                return;
             }
 
-            let sigBImgHtml = '';
-            if (partyBSigDataUrl && partyBSigDataUrl.length > 20) {
-                sigBImgHtml = `<img src="${partyBSigDataUrl}" style="max-height: 48px; max-width: 180px; object-fit: contain; margin: 0 auto; display: block;" alt="Taraf B İmza" />`;
-            } else {
-                sigBImgHtml = `<div style="color: #15803d; font-weight: 700; font-size: 12px; text-align: center; padding-top: 10px;">✓ E-İmzalandı (${partyBVal})</div>`;
-            }
-
-            // Create pristine container for background rendering
-            const cleanDoc = document.createElement('div');
+            // Clone official document card to a 100% opaque export container
+            const cleanDoc = sourceCard.cloneNode(true);
+            cleanDoc.id = 'cleanPdfExportDoc';
             cleanDoc.style.cssText = `
                 position: fixed;
                 top: 0;
                 left: 0;
-                width: 794px;
-                z-index: -9999;
-                opacity: 0.01;
-                pointer-events: none;
+                width: 760px;
                 background-color: #ffffff !important;
                 background: #ffffff !important;
                 color: #0f172a !important;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                padding: 18px 22px;
+                padding: 24px;
                 box-sizing: border-box;
-                visibility: visible;
-            `;
-
-            cleanDoc.innerHTML = `
-                <div style="width: 100%; background: #ffffff; color: #0f172a; padding: 0; box-sizing: border-box; line-height: 1.2;">
-                    <!-- Document Header -->
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #15803d; padding-bottom: 6px; margin-bottom: 8px;">
-                        <div>
-                            <h1 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">ContractGuard Safesign</h1>
-                            <p style="margin: 2px 0 0 0; font-size: 8.5px; color: #475569; font-weight: 600;">E-İmzalı Resmi Sözleşme Belgesi</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <span style="display: inline-block; background-color: #f0fdf4; color: #166534; font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 6px; border: 1px solid #bbf7d0;">
-                                ✓ E-İmza Mühürlü
-                            </span>
-                            <p style="margin: 2px 0 0 0; font-size: 8px; font-family: monospace; color: #64748b; font-weight: bold;">${docIdVal}</p>
-                        </div>
-                    </div>
-
-                    <!-- Contract Title & Legal Banner -->
-                    <div style="margin-bottom: 8px;">
-                        <h2 style="margin: 0 0 2px 0; font-size: 12px; font-weight: 700; color: #0f172a;">${docTitleVal}</h2>
-                        <p style="margin: 0; font-size: 8px; color: #475569; line-height: 1.2;">
-                            Bu belge 5070 Sayılı Elektronik İmza Kanunu kapsamında tarafların dijital e-imzaları ve doğrulama mühürleri ile resmiyet kazanmıştır.
-                        </p>
-                    </div>
-
-                    <!-- Compact Parties Bar -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 5px 8px; border-radius: 5px; font-size: 8.5px;">
-                        <div>
-                            <span style="font-size: 7.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">TARAF A:</span>
-                            <strong style="font-size: 9.5px; color: #0f172a; font-weight: 700; margin-left: 4px;">${partyAVal}</strong>
-                        </div>
-                        <div>
-                            <span style="font-size: 7.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">TARAF B (İMZACI):</span>
-                            <strong style="font-size: 9.5px; color: #15803d; font-weight: 700; margin-left: 4px;">${partyBVal}</strong>
-                            <span style="font-size: 8px; font-weight: 700; color: #15803d; margin-left: 6px;">✓ E-İmzalandı</span>
-                        </div>
-                    </div>
-
-                    <!-- Contract Terms Text Box (COMPLETE TEXT, NO SCROLLBAR, NO MAX-HEIGHT) -->
-                    <div style="margin-bottom: 8px;">
-                        <div style="font-size: 7.5px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.5px;">SÖZLEŞME MADDELERİ & ŞARTLAR:</div>
-                        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; padding: 6px 8px; border-radius: 4px; font-size: 8px; font-family: monospace; color: #1e293b; line-height: 1.25; white-space: pre-wrap; word-break: break-word;">${contractContentVal}</div>
-                    </div>
-
-                    <!-- Dual Signature Block -->
-                    <div style="border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: 8px;">
-                        <h4 style="margin: 0 0 5px 0; font-size: 8px; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px;">Taraf E-İmza Mühürleri & İmzalar</h4>
-                        <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-                            <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 5px; border-radius: 4px; text-align: center;">
-                                <div style="font-size: 7px; font-weight: 700; color: #64748b; margin-bottom: 2px; text-transform: uppercase;">TARAF A İMZASI (${partyAVal}):</div>
-                                <div style="height: 32px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 4px; padding: 1px; overflow: hidden;">
-                                    ${sigAImgHtml}
-                                </div>
-                            </div>
-                            <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 5px; border-radius: 4px; text-align: center;">
-                                <div style="font-size: 7px; font-weight: 700; color: #64748b; margin-bottom: 2px; text-transform: uppercase;">TARAF B İMZASI (${partyBVal}):</div>
-                                <div style="height: 32px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border: 1px dashed #cbd5e1; border-radius: 4px; padding: 1px; overflow: hidden;">
-                                    ${sigBImgHtml}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Hash & Timestamp Seal Bar -->
-                        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 6px; border-radius: 4px; font-size: 7px; font-family: monospace; color: #166534; display: flex; justify-content: space-between; align-items: center;">
-                            <span>Mühür Hash (SHA-256): <strong style="color: #14532d;">${hashVal}</strong></span>
-                            <span>Zaman Damgası: <strong style="color: #14532d;">${timeStrVal}</strong></span>
-                        </div>
-                    </div>
-
-                    <!-- Legal Footer -->
-                    <div style="margin-top: 8px; text-align: center; font-size: 7px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 4px;">
-                        ContractGuard Safesign • 5070 Sayılı Elektronik İmza Kanunu Uyarınca Islak İmza Hükmündedir.
-                    </div>
-                </div>
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                z-index: 999999;
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: none;
             `;
 
             document.body.appendChild(cleanDoc);
@@ -706,11 +618,10 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                     backgroundColor: '#ffffff', 
                     logging: false,
                     scrollX: 0,
-                    scrollY: 0,
-                    windowWidth: 794
+                    scrollY: 0
                 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:    { mode: 'avoid-all' }
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
             function resetBtn() {
@@ -732,7 +643,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                     html2pdf().set(opt).from(cleanDoc).save().then(() => {
                         cleanup();
                     }).catch(saveErr => {
-                        console.error('Direct save failed, trying blob download:', saveErr);
+                        console.error('html2pdf save failed, trying blob download:', saveErr);
                         html2pdf().set(opt).from(cleanDoc).output('blob').then((pdfBlob) => {
                             const blobUrl = URL.createObjectURL(pdfBlob);
                             const downloadLink = document.createElement('a');
@@ -746,7 +657,7 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                                 cleanup();
                             }, 800);
                         }).catch(blobErr => {
-                            console.error('Blob download failed:', blobErr);
+                            console.error('Blob download failed, falling back to print:', blobErr);
                             cleanup();
                             window.print();
                         });
@@ -784,12 +695,12 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                                 }, 800);
                             }
                         } catch (shareErr) {
-                            console.log('Share API error, downloading instead:', shareErr);
+                            console.log('Share API error:', shareErr);
                             cleanup();
                             window.print();
                         }
                     }).catch(err => {
-                        console.error('PDF blob error:', err);
+                        console.error('PDF share blob error:', err);
                         cleanup();
                         window.print();
                     });
