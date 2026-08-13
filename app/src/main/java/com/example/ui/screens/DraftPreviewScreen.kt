@@ -118,9 +118,15 @@ fun DraftPreviewScreen(
     val encodedPartyA = remember(contract.partyA) { java.net.URLEncoder.encode(contract.partyA, "UTF-8") }
     val encodedPartyB = remember(contract.partyB) { java.net.URLEncoder.encode(contract.partyB, "UTF-8") }
 
-    // Short, clean & concise remote signing URL (avoids 10k+ character URI limits)
-    val remoteSigningLink = remember(webHostBaseUrl, contract.id, encodedPartyA, encodedPartyB, encodedTitle) {
-        "$webHostBaseUrl/#id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle"
+    val encodedSigA = remember(contract.signatureBase64) {
+        if (!contract.signatureBase64.isNullOrEmpty()) {
+            try { java.net.URLEncoder.encode(contract.signatureBase64, "UTF-8") } catch (e: Exception) { "" }
+        } else ""
+    }
+
+    // Short, clean & concise remote signing URL with compact dynamic signature
+    val remoteSigningLink = remember(webHostBaseUrl, contract.id, encodedPartyA, encodedPartyB, encodedTitle, encodedSigA) {
+        "$webHostBaseUrl/#id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
     }
     val hasUserSigned = !contract.signatureBase64.isNullOrEmpty() || contract.status == "SIGNED"
 

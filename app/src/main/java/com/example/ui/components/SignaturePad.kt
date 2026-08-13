@@ -198,7 +198,7 @@ fun SignaturePad(
             Button(
                 onClick = {
                     if (paths.isNotEmpty()) {
-                        val base64 = exportPathsToBase64(paths, 600, 300)
+                        val base64 = exportPathsToBase64(paths, 280, 140)
                         onSignatureCaptured(base64)
                     }
                 },
@@ -222,7 +222,7 @@ fun SignaturePad(
     }
 }
 
-private fun exportPathsToBase64(paths: List<Path>, targetWidth: Int = 600, targetHeight: Int = 300): String {
+private fun exportPathsToBase64(paths: List<Path>, targetWidth: Int = 280, targetHeight: Int = 140): String {
     if (paths.isEmpty()) return ""
     return try {
         // Calculate exact bounding rectangle of all drawn signature paths
@@ -247,7 +247,7 @@ private fun exportPathsToBase64(paths: List<Path>, targetWidth: Int = 600, targe
         val canvas = AndroidCanvas(bitmap)
         canvas.drawColor(AndroidColor.WHITE)
 
-        val padding = 32f
+        val padding = 16f
         val availWidth = targetWidth - (padding * 2f)
         val availHeight = targetHeight - (padding * 2f)
 
