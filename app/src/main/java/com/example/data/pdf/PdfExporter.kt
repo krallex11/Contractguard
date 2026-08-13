@@ -342,7 +342,7 @@ object PdfExporter {
     fun savePdfToPublicDownloads(context: Context, pdfFile: File, contractTitle: String): String {
         return try {
             val sanitizedTitle = contractTitle.replace(Regex("[^a-zA-Z0-9_]"), "_")
-            val fileName = "Sozlesme_${sanitizedTitle}_${System.currentTimeMillis()}.pdf"
+            val fileName = "Contract_${sanitizedTitle}_${System.currentTimeMillis()}.pdf"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val contentValues = ContentValues().apply {

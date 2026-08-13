@@ -218,12 +218,12 @@ Loading agreement terms...
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 max-w-md mx-auto">
                     <button id="downloadPdfBtn" class="py-3.5 px-5 bg-accentGreen hover:bg-accentGreenHover text-slate-950 font-bold text-sm rounded-xl flex items-center justify-center gap-2.5 transition shadow-lg shadow-accentGreen/20">
                         <span class="text-base">📥</span>
-                        <span>PDF İndir (A4)</span>
+                        <span>Download PDF (A4)</span>
                     </button>
 
                     <button id="sharePdfBtn" class="py-3.5 px-5 bg-darkBg hover:bg-darkBorder border border-accentGreen text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2.5 transition shadow-md">
                         <span class="text-base">📤</span>
-                        <span>PDF Paylaş (A4)</span>
+                        <span>Share PDF (A4)</span>
                     </button>
                 </div>
             </div>
@@ -752,7 +752,7 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 scrollX: 0,
                 scrollY: 0
             }).then((canvas) => {
-                // 1. Cache the JPG image data URL of the "Resmi E-İmzalı Belge Görünümü"
+                // 1. Cache the JPG image data URL of the "Official E-Signed Document View"
                 cachedJpgDataUrl = canvas.toDataURL('image/jpeg', 0.95);
 
                 // 2. Build a strict 1-Page A4 PDF from this cached JPG
@@ -806,7 +806,7 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
         document.getElementById('downloadPdfBtn').addEventListener('click', () => {
             const downloadBtn = document.getElementById('downloadPdfBtn');
             const originalHtml = downloadBtn.innerHTML;
-            downloadBtn.innerHTML = '<span>⏳</span><span>İndiriliyor...</span>';
+            downloadBtn.innerHTML = '<span>⏳</span><span>Downloading...</span>';
             downloadBtn.disabled = true;
 
             getOrGeneratePdfBlob().then((pdfBlob) => {
@@ -826,7 +826,7 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 console.error('Download PDF error:', err);
                 downloadBtn.innerHTML = originalHtml;
                 downloadBtn.disabled = false;
-                alert('PDF indirilemedi, lütfen tekrar deneyin.');
+                alert('Could not download PDF, please try again.');
             });
         });
 
@@ -834,7 +834,7 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
         document.getElementById('sharePdfBtn').addEventListener('click', () => {
             const shareBtn = document.getElementById('sharePdfBtn');
             const originalHtml = shareBtn.innerHTML;
-            shareBtn.innerHTML = '<span>⏳</span><span>Hazırlanıyor...</span>';
+            shareBtn.innerHTML = '<span>⏳</span><span>Preparing...</span>';
             shareBtn.disabled = true;
 
             getOrGeneratePdfBlob().then(async (pdfBlob) => {
@@ -879,7 +879,7 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 console.error('Share PDF error:', err);
                 shareBtn.innerHTML = originalHtml;
                 shareBtn.disabled = false;
-                alert('PDF paylaşılamadı, lütfen tekrar deneyin.');
+                alert('Could not share PDF, please try again.');
             });
         });
     </script>
