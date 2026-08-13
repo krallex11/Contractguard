@@ -700,22 +700,25 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
             document.getElementById('successState').classList.remove('hidden');
 
             window.scrollTo({ top: document.getElementById('successState').offsetTop - 20, behavior: 'smooth' });
+
+            // Pre-generate & cache PDF Blob immediately in background
+            setTimeout(() => {
+                getOrGeneratePdfBlob().catch(err => console.log('Background PDF caching:', err));
+            }, 300);
         });
 
-        // Universal Single-Page & Multi-Page PDF Generator Engine
-        function generatePdfDocument(action = 'download') {
-            const downloadBtn = document.getElementById('downloadPdfBtn');
-            const originalBtnHtml = downloadBtn ? downloadBtn.innerHTML : '';
-            if (downloadBtn && action === 'download') {
-                downloadBtn.innerHTML = '<span>⏳</span><span>Downloading PDF...</span>';
-                downloadBtn.disabled = true;
+        // Cached PDF Blob Storage
+        let cachedPdfBlob = null;
+        let cachedPdfFileName = '';
+
+        function getOrGeneratePdfBlob() {
+            if (cachedPdfBlob) {
+                return Promise.resolve(cachedPdfBlob);
             }
 
             const sourceCard = document.getElementById('officialDocCard');
             if (!sourceCard) {
-                if (downloadBtn) downloadBtn.innerHTML = originalBtnHtml;
-                window.print();
-                return;
+                return Promise.reject(new Error('Document card not found'));
             }
 
             // Clone official document card to a 100% opaque export container
@@ -743,11 +746,11 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
             document.body.appendChild(cleanDoc);
 
             const cleanTitle = (title || 'Signed_Contract').replace(/[^a-zA-Z0-9]/g, '_');
-            const safeFileName = `Contract_${cleanTitle}.pdf`;
+            cachedPdfFileName = `Contract_${cleanTitle}.pdf`;
 
             const opt = {
                 margin:       [6, 6, 6, 6],
-                filename:     safeFileName,
+                filename:     cachedPdfFileName,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
                     scale: 2, 
@@ -761,96 +764,53 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
-            function resetBtn() {
-                if (downloadBtn) {
-                    downloadBtn.innerHTML = originalBtnHtml;
-                    downloadBtn.disabled = false;
-                }
-            }
-
-            function cleanup() {
+            if (typeof html2pdf !== 'undefined') {
+                return html2pdf().set(opt).from(cleanDoc).output('blob').then((pdfBlob) => {
+                    cachedPdfBlob = pdfBlob;
+                    if (cleanDoc && cleanDoc.parentNode) {
+                        cleanDoc.parentNode.removeChild(cleanDoc);
+                    }
+                    return pdfBlob;
+                }).catch((err) => {
+                    if (cleanDoc && cleanDoc.parentNode) {
+                        cleanDoc.parentNode.removeChild(cleanDoc);
+                    }
+                    throw err;
+                });
+            } else {
                 if (cleanDoc && cleanDoc.parentNode) {
                     cleanDoc.parentNode.removeChild(cleanDoc);
                 }
-                resetBtn();
-            }
-
-            if (typeof html2pdf !== 'undefined') {
-                if (action === 'download') {
-                    html2pdf().set(opt).from(cleanDoc).save().then(() => {
-                        cleanup();
-                    }).catch(saveErr => {
-                        console.error('html2pdf save failed, trying blob download:', saveErr);
-                        html2pdf().set(opt).from(cleanDoc).output('blob').then((pdfBlob) => {
-                            const blobUrl = URL.createObjectURL(pdfBlob);
-                            const downloadLink = document.createElement('a');
-                            downloadLink.href = blobUrl;
-                            downloadLink.download = safeFileName;
-                            document.body.appendChild(downloadLink);
-                            downloadLink.click();
-                            setTimeout(() => {
-                                if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
-                                URL.revokeObjectURL(blobUrl);
-                                cleanup();
-                            }, 800);
-                        }).catch(blobErr => {
-                            console.error('Blob download failed, falling back to print:', blobErr);
-                            cleanup();
-                            window.print();
-                        });
-                    });
-                } else if (action === 'share') {
-                    html2pdf().set(opt).from(cleanDoc).output('blob').then(async (pdfBlob) => {
-                        try {
-                            const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
-                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                                await navigator.share({
-                                    title: title,
-                                    text: `ContractGuard e-signed agreement (${title}).`,
-                                    files: [file]
-                                });
-                                cleanup();
-                            } else if (navigator.share) {
-                                const cleanShareUrl = window.location.origin + window.location.pathname + '#id=' + encodeURIComponent(contractId) + '&title=' + encodeURIComponent(title) + '&partyA=' + encodeURIComponent(partyA) + '&partyB=' + encodeURIComponent(partyB);
-                                await navigator.share({
-                                    title: title,
-                                    text: `ContractGuard e-signed agreement (${title}).`,
-                                    url: cleanShareUrl
-                                });
-                                cleanup();
-                            } else {
-                                const blobUrl = URL.createObjectURL(pdfBlob);
-                                const downloadLink = document.createElement('a');
-                                downloadLink.href = blobUrl;
-                                downloadLink.download = safeFileName;
-                                document.body.appendChild(downloadLink);
-                                downloadLink.click();
-                                setTimeout(() => {
-                                    if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
-                                    URL.revokeObjectURL(blobUrl);
-                                    cleanup();
-                                }, 800);
-                            }
-                        } catch (shareErr) {
-                            console.log('Share API error:', shareErr);
-                            cleanup();
-                            window.print();
-                        }
-                    }).catch(err => {
-                        console.error('PDF share blob error:', err);
-                        cleanup();
-                        window.print();
-                    });
-                }
-            } else {
-                cleanup();
-                window.print();
+                return Promise.reject(new Error('html2pdf library unavailable'));
             }
         }
 
-        // PDF Download Button
+        // PDF Download Button - Uses Cached PDF Engine
         document.getElementById('downloadPdfBtn').addEventListener('click', () => {
-            generatePdfDocument('download');
+            const downloadBtn = document.getElementById('downloadPdfBtn');
+            const originalHtml = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<span>⏳</span><span>Downloading PDF...</span>';
+            downloadBtn.disabled = true;
+
+            getOrGeneratePdfBlob().then((pdfBlob) => {
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                const downloadLink = document.createElement('a');
+                downloadLink.href = blobUrl;
+                downloadLink.download = cachedPdfFileName || 'Signed_Contract.pdf';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                setTimeout(() => {
+                    if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
+                    URL.revokeObjectURL(blobUrl);
+                    downloadBtn.innerHTML = originalHtml;
+                    downloadBtn.disabled = false;
+                }, 800);
+            }).catch((err) => {
+                console.error('Download PDF error:', err);
+                downloadBtn.innerHTML = originalHtml;
+                downloadBtn.disabled = false;
+                window.print();
+            });
         });
 
         // Print / Native Save as PDF Button
@@ -858,9 +818,57 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
             window.print();
         });
 
-        // PDF Share Button
+        // PDF Share Button - Uses Cached PDF Engine
         document.getElementById('sharePdfBtn').addEventListener('click', () => {
-            generatePdfDocument('share');
+            const shareBtn = document.getElementById('sharePdfBtn');
+            const originalHtml = shareBtn.innerHTML;
+            shareBtn.innerHTML = '<span>⏳</span><span>Preparing PDF...</span>';
+            shareBtn.disabled = true;
+
+            getOrGeneratePdfBlob().then(async (pdfBlob) => {
+                shareBtn.innerHTML = originalHtml;
+                shareBtn.disabled = false;
+
+                const file = new File([pdfBlob], cachedPdfFileName || 'Signed_Contract.pdf', { type: 'application/pdf' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            title: title,
+                            text: `ContractGuard E-Signed Agreement (${title})`,
+                            files: [file]
+                        });
+                    } catch (shareErr) {
+                        console.log('Share API canceled or failed:', shareErr);
+                    }
+                } else if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: title,
+                            text: `ContractGuard E-Signed Agreement (${title})`,
+                            url: window.location.href
+                        });
+                    } catch (shareErr) {
+                        console.log('Share URL canceled or failed:', shareErr);
+                    }
+                } else {
+                    const blobUrl = URL.createObjectURL(pdfBlob);
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = blobUrl;
+                    downloadLink.download = cachedPdfFileName || 'Signed_Contract.pdf';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    setTimeout(() => {
+                        if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
+                        URL.revokeObjectURL(blobUrl);
+                    }, 800);
+                }
+            }).catch((err) => {
+                console.error('Share PDF error:', err);
+                shareBtn.innerHTML = originalHtml;
+                shareBtn.disabled = false;
+                window.print();
+            });
         });
     </script>
 </body>
