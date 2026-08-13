@@ -324,6 +324,20 @@ Sözleşme yükleniyor...
 
     <!-- Script Logic -->
     <script>
+        // Dynamic Application Signature Generator for Party A (Uygulama E-İmzası)
+        function generateAppSignature(name) {
+            const safeName = (name || 'Taraf A').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="60" viewBox="0 0 220 60">
+                <rect width="220" height="60" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+                <path d="M 15 32 Q 35 10 55 32 T 95 16 T 135 38 T 175 14 T 205 30" fill="none" stroke="#1d4ed8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 10 44 Q 105 52 200 40" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="198" cy="18" r="7" fill="#166534"/>
+                <path d="M 194 18 L 197 21 L 202 15" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <text x="100" y="55" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="8.5" font-weight="700" fill="#0f172a" text-anchor="middle">${safeName} (Uygulama İmzası)</text>
+            </svg>`;
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        }
+
         // Safe URI Decoder & Base64 Sanitizer
         function safeDecode(val, fallback = '') {
             if (!val) return fallback;
@@ -384,7 +398,7 @@ Sözleşme yükleniyor...
             title = safeDecode(urlParams.get('title'), 'Uzaktan Hizmet ve Gizlilik Sözleşmesi');
             
             const rawSigA = urlParams.get('sigA');
-            if (rawSigA) {
+            if (rawSigA && rawSigA.trim().length > 10) {
                 sigA = fixBase64Image(rawSigA);
             }
             
@@ -394,6 +408,11 @@ Sözleşme yükleniyor...
             }
         } catch (err) {
             console.error('URL params parsing error:', err);
+        }
+
+        // Fallback to Uygulama İmzası for Party A if not explicitly passed
+        if (!sigA || sigA.trim().length < 20) {
+            sigA = generateAppSignature(partyA);
         }
 
         if (!sampleText) {
@@ -418,23 +437,15 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
         document.getElementById('partyANameFinal').innerText = partyA;
         document.getElementById('partyBNameFinal').innerText = partyB;
 
-        // Display Party A Signature if present
+        // Display Party A Signature (Always present via App Signature)
         const partyASigBox = document.getElementById('partyASigBox');
         const finalSigAImg = document.getElementById('finalSigAImg');
         
-        if (sigA && sigA.trim().length > 20) {
-            partyASigBox.innerHTML = `
-                <img src="${sigA}" style="max-height: 36px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A İmza" />
-                <span class="text-emerald-400 font-semibold text-[11px] block">✓ Taraf A İmzalı</span>
-            `;
-            finalSigAImg.innerHTML = `<img src="${sigA}" style="max-height: 40px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A İmza" />`;
-        } else {
-            partyASigBox.innerHTML = `
-                <span class="text-emerald-400 text-sm">✓</span>
-                <span class="text-emerald-400 font-semibold text-xs">Dijital Onaylı (Taraf A)</span>
-            `;
-            finalSigAImg.innerHTML = `<span class="text-emerald-400 font-semibold text-xs">✓ Dijital Onaylı</span>`;
-        }
+        partyASigBox.innerHTML = `
+            <img src="${sigA}" style="max-height: 36px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A Uygulama İmzası" />
+            <span class="text-emerald-400 font-semibold text-[11px] block">✓ Uygulama İmzalı</span>
+        `;
+        finalSigAImg.innerHTML = `<img src="${sigA}" style="max-height: 40px; max-width: 140px; object-fit: contain; background: white; border-radius: 4px; padding: 2px;" alt="Taraf A Uygulama İmzası" />`;
 
         document.getElementById('contractText').innerText = sampleText;
 
@@ -527,9 +538,10 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             document.getElementById('officialSigBLabel').innerText = `TARAF B İMZASI (${partyB}):`;
 
             if (sigA && sigA.trim().length > 20) {
-                document.getElementById('officialSigAContainer').innerHTML = `<img src="${sigA}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Taraf A İmza" />`;
+                document.getElementById('officialSigAContainer').innerHTML = `<img src="${sigA}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Taraf A Uygulama İmzası" />`;
             } else {
-                document.getElementById('officialSigAContainer').innerHTML = `<span style="color: #15803d; font-weight: bold; font-size: 12px;">✓ Dijital Onaylı (Taraf A)</span>`;
+                sigA = generateAppSignature(partyA);
+                document.getElementById('officialSigAContainer').innerHTML = `<img src="${sigA}" style="max-height: 50px; max-width: 180px; object-fit: contain;" alt="Taraf A Uygulama İmzası" />`;
             }
 
             if (partyBSigDataUrl && partyBSigDataUrl.length > 20) {
@@ -564,9 +576,10 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
 
             let sigAImgHtml = '';
             if (sigA && sigA.trim().length > 20) {
-                sigAImgHtml = `<img src="${sigA}" style="max-height: 48px; max-width: 180px; object-fit: contain; margin: 0 auto; display: block;" alt="Taraf A İmza" />`;
+                sigAImgHtml = `<img src="${sigA}" style="max-height: 48px; max-width: 180px; object-fit: contain; margin: 0 auto; display: block;" alt="Taraf A Uygulama İmzası" />`;
             } else {
-                sigAImgHtml = `<div style="color: #15803d; font-weight: 700; font-size: 12px; text-align: center; padding-top: 10px;">✓ Dijital Onaylı (${partyAVal})</div>`;
+                sigA = generateAppSignature(partyAVal);
+                sigAImgHtml = `<img src="${sigA}" style="max-height: 48px; max-width: 180px; object-fit: contain; margin: 0 auto; display: block;" alt="Taraf A Uygulama İmzası" />`;
             }
 
             let sigBImgHtml = '';
@@ -576,14 +589,14 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                 sigBImgHtml = `<div style="color: #15803d; font-weight: 700; font-size: 12px; text-align: center; padding-top: 10px;">✓ E-İmzalandı (${partyBVal})</div>`;
             }
 
-            // Create pristine fixed A4 container on top layer for html2pdf
+            // Create pristine fixed container offscreen for background rendering
             const cleanDoc = document.createElement('div');
             cleanDoc.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
+                position: fixed;
+                top: -9999px;
+                left: -9999px;
                 width: 794px;
-                z-index: 999999;
+                z-index: -99999;
                 background-color: #ffffff !important;
                 background: #ffffff !important;
                 color: #0f172a !important;
@@ -706,10 +719,31 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
 
             if (typeof html2pdf !== 'undefined') {
                 if (action === 'download') {
-                    html2pdf().set(opt).from(cleanDoc).save().then(() => {
-                        cleanup();
+                    html2pdf().set(opt).from(cleanDoc).output('blob').then((pdfBlob) => {
+                        try {
+                            const blobUrl = URL.createObjectURL(pdfBlob);
+                            const downloadLink = document.createElement('a');
+                            downloadLink.href = blobUrl;
+                            downloadLink.download = safeFileName;
+                            document.body.appendChild(downloadLink);
+                            downloadLink.click();
+                            setTimeout(() => {
+                                if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
+                                URL.revokeObjectURL(blobUrl);
+                                cleanup();
+                            }, 800);
+                        } catch (dlErr) {
+                            console.error('Blob download error:', dlErr);
+                            html2pdf().set(opt).from(cleanDoc).save().then(() => {
+                                cleanup();
+                            }).catch(saveErr => {
+                                console.error('Save failed:', saveErr);
+                                cleanup();
+                                window.print();
+                            });
+                        }
                     }).catch(err => {
-                        console.error('html2pdf save error:', err);
+                        console.error('html2pdf blob error:', err);
                         cleanup();
                         window.print();
                     });
@@ -725,22 +759,30 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                                 });
                                 cleanup();
                             } else if (navigator.share) {
+                                const cleanShareUrl = window.location.origin + window.location.pathname + '#id=' + encodeURIComponent(contractId) + '&title=' + encodeURIComponent(title) + '&partyA=' + encodeURIComponent(partyA) + '&partyB=' + encodeURIComponent(partyB);
                                 await navigator.share({
                                     title: title,
                                     text: `ContractGuard e-imzalı sözleşme belgesi (${title}).`,
-                                    url: window.location.href
+                                    url: cleanShareUrl
                                 });
                                 cleanup();
                             } else {
-                                html2pdf().set(opt).from(cleanDoc).save().then(() => {
+                                const blobUrl = URL.createObjectURL(pdfBlob);
+                                const downloadLink = document.createElement('a');
+                                downloadLink.href = blobUrl;
+                                downloadLink.download = safeFileName;
+                                document.body.appendChild(downloadLink);
+                                downloadLink.click();
+                                setTimeout(() => {
+                                    if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
+                                    URL.revokeObjectURL(blobUrl);
                                     cleanup();
-                                });
+                                }, 800);
                             }
                         } catch (shareErr) {
                             console.log('Share API error, downloading instead:', shareErr);
-                            html2pdf().set(opt).from(cleanDoc).save().then(() => {
-                                cleanup();
-                            });
+                            cleanup();
+                            window.print();
                         }
                     }).catch(err => {
                         console.error('PDF blob error:', err);
