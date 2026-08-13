@@ -24,8 +24,10 @@
         }
     </script>
     
-    <!-- SignaturePad & html2pdf Bundle Libraries -->
+    <!-- SignaturePad, html2canvas, jsPDF & html2pdf Bundle Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- Print & PDF Styling -->
@@ -707,7 +709,8 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
             }, 300);
         });
 
-        // Cached PDF Blob Storage
+        // Cached Storage for JPG Image and 1-Page A4 PDF Blob
+        let cachedJpgDataUrl = null;
         let cachedPdfBlob = null;
         let cachedPdfFileName = '';
 
@@ -721,13 +724,13 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 return Promise.reject(new Error('Document card not found'));
             }
 
-            // Clone official document card to a 100% opaque export container
+            // Clone official document card to an offscreen clean export container
             const cleanDoc = sourceCard.cloneNode(true);
             cleanDoc.id = 'cleanPdfExportDoc';
             cleanDoc.style.cssText = `
                 position: fixed;
-                top: 0;
-                left: 0;
+                top: -9999px;
+                left: -9999px;
                 width: 780px;
                 background-color: #ffffff !important;
                 background: #ffffff !important;
@@ -740,7 +743,6 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 z-index: 999999;
                 opacity: 1 !important;
                 visibility: visible !important;
-                pointer-events: none;
             `;
 
             document.body.appendChild(cleanDoc);
@@ -748,41 +750,62 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
             const cleanTitle = (title || 'Signed_Contract').replace(/[^a-zA-Z0-9]/g, '_');
             cachedPdfFileName = `Contract_${cleanTitle}.pdf`;
 
-            const opt = {
-                margin:       [6, 6, 6, 6],
-                filename:     cachedPdfFileName,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { 
-                    scale: 2, 
-                    useCORS: true, 
-                    backgroundColor: '#ffffff', 
-                    logging: false,
-                    scrollX: 0,
-                    scrollY: 0
-                },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-            };
+            return html2canvas(cleanDoc, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                scrollX: 0,
+                scrollY: 0
+            }).then((canvas) => {
+                // 1. Cache the JPG image data URL of the "Resmi E-İmzalı Belge Görünümü"
+                cachedJpgDataUrl = canvas.toDataURL('image/jpeg', 0.95);
 
-            if (typeof html2pdf !== 'undefined') {
-                return html2pdf().set(opt).from(cleanDoc).output('blob').then((pdfBlob) => {
-                    cachedPdfBlob = pdfBlob;
-                    if (cleanDoc && cleanDoc.parentNode) {
-                        cleanDoc.parentNode.removeChild(cleanDoc);
-                    }
-                    return pdfBlob;
-                }).catch((err) => {
-                    if (cleanDoc && cleanDoc.parentNode) {
-                        cleanDoc.parentNode.removeChild(cleanDoc);
-                    }
-                    throw err;
+                // 2. Build a strict 1-Page A4 PDF from this cached JPG
+                const jsPDFConstructor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+                if (!jsPDFConstructor) {
+                    throw new Error('jsPDF library unavailable');
+                }
+
+                const pdf = new jsPDFConstructor({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
                 });
-            } else {
+
+                // Standard A4 Dimensions in mm
+                const pdfWidth = 210;
+                const pdfHeight = 297;
+                const margin = 6;
+                const maxWidth = pdfWidth - (margin * 2);  // 198 mm
+                const maxHeight = pdfHeight - (margin * 2); // 285 mm
+
+                let imgWidth = maxWidth;
+                let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                if (imgHeight > maxHeight) {
+                    imgHeight = maxHeight;
+                    imgWidth = (canvas.width * imgHeight) / canvas.height;
+                }
+
+                const x = (pdfWidth - imgWidth) / 2;
+                const y = (pdfHeight - imgHeight) / 2;
+
+                pdf.addImage(cachedJpgDataUrl, 'JPEG', x, y, imgWidth, imgHeight);
+
+                cachedPdfBlob = pdf.output('blob');
+
                 if (cleanDoc && cleanDoc.parentNode) {
                     cleanDoc.parentNode.removeChild(cleanDoc);
                 }
-                return Promise.reject(new Error('html2pdf library unavailable'));
-            }
+
+                return cachedPdfBlob;
+            }).catch((err) => {
+                if (cleanDoc && cleanDoc.parentNode) {
+                    cleanDoc.parentNode.removeChild(cleanDoc);
+                }
+                throw err;
+            });
         }
 
         // PDF Download Button - Uses Cached PDF Engine
