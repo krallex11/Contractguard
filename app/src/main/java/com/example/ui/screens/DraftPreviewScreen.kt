@@ -340,7 +340,7 @@ fun DraftPreviewScreen(
                 }
             }
 
-            // Signature Pad or E-Signature Seal Display (Taraf A)
+            // Signature Pad or E-Signature Seal Display (Party A)
             item {
                 if (contract.status == "SIGNED" && !contract.signatureBase64.isNullOrEmpty()) {
                     Card(
