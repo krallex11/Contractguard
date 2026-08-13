@@ -335,8 +335,23 @@ Loading agreement terms...
         }
 
         // Safe URI Decoder & Base64 Sanitizer
+        function sanitizeToEnglish(str) {
+            if (!str) return '';
+            const trMap = {
+                'ç': 'c', 'Ç': 'C',
+                'ğ': 'g', 'Ğ': 'G',
+                'ı': 'i', 'İ': 'I',
+                'ö': 'o', 'Ö': 'O',
+                'ş': 's', 'Ş': 'S',
+                'ü': 'u', 'Ü': 'U'
+            };
+            return str.replace(/[çÇğĞıİöÖşŞüÜ]/g, function(letter) {
+                return trMap[letter] || letter;
+            });
+        }
+
         function safeDecode(val, fallback = '') {
-            if (!val) return fallback;
+            if (!val) return sanitizeToEnglish(fallback);
             try {
                 let str = val;
                 if (str.includes('%')) {
@@ -350,9 +365,9 @@ Loading agreement terms...
                 if (str.includes('+') && !str.startsWith('data:image')) {
                     str = str.replace(/\+/g, ' ');
                 }
-                return str;
+                return sanitizeToEnglish(str);
             } catch (e) {
-                return val || fallback;
+                return sanitizeToEnglish(val || fallback);
             }
         }
 
@@ -563,6 +578,12 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
         }
 
         // Populate Dynamic UI Elements safely
+        contractId = sanitizeToEnglish(contractId);
+        title = sanitizeToEnglish(title);
+        partyA = sanitizeToEnglish(partyA);
+        partyB = sanitizeToEnglish(partyB);
+        sampleText = sanitizeToEnglish(sampleText);
+
         document.getElementById('docId').innerText = 'ID: #' + contractId;
         document.getElementById('docTitle').innerText = title;
         document.getElementById('partyAName').innerText = partyA;

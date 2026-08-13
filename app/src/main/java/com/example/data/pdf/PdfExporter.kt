@@ -30,8 +30,14 @@ import java.util.Locale
 
 object PdfExporter {
 
-    fun generatePdfFile(context: Context, contract: ContractEntity): File? {
+    fun generatePdfFile(context: Context, rawContract: ContractEntity): File? {
         return try {
+            val contract = rawContract.copy(
+                title = rawContract.title.toEnglishAscii(),
+                partyA = rawContract.partyA.toEnglishAscii(),
+                partyB = rawContract.partyB.toEnglishAscii(),
+                generatedDraftText = rawContract.generatedDraftText.toEnglishAscii()
+            )
             val document = PdfDocument()
             // Standard A4 Size: 595 x 842 points
             val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
@@ -335,6 +341,16 @@ object PdfExporter {
             e.printStackTrace()
             null
         }
+    }
+
+    fun String.toEnglishAscii(): String {
+        return this
+            .replace("ç", "c").replace("Ç", "C")
+            .replace("ğ", "g").replace("Ğ", "G")
+            .replace("ı", "i").replace("İ", "I")
+            .replace("ö", "o").replace("Ö", "O")
+            .replace("ş", "s").replace("Ş", "S")
+            .replace("ü", "u").replace("Ü", "U")
     }
 
     private fun String?.isNull_or_empty(): Boolean = this == null || this.trim().isEmpty()
