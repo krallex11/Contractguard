@@ -109,7 +109,7 @@ fun DraftPreviewScreen(
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
-    var webHostBaseUrl by remember { mutableStateOf("https://contractguard-5511.vercel.app") }
+    var webHostBaseUrl by remember { mutableStateOf("https://ais-pre-sabqgpl76hvejgkua4tpwg-185379952770.europe-west2.run.app") }
 
     var showDomainDialog by remember { mutableStateOf(false) }
     var tempDomainInput by remember { mutableStateOf(webHostBaseUrl) }
@@ -843,7 +843,7 @@ fun DraftPreviewScreen(
             text = {
                 Column {
                     Text(
-                        text = "Enter your primary domain (e.g., https://contractguard-5511.vercel.app).",
+                        text = "Enter your web portal domain or URL.",
                         fontSize = 12.sp,
                         color = SleekTextMuted
                     )
@@ -851,7 +851,7 @@ fun DraftPreviewScreen(
                     OutlinedTextField(
                         value = tempDomainInput,
                         onValueChange = { tempDomainInput = it },
-                        placeholder = { Text("https://your-domain.vercel.app", fontSize = 12.sp, color = SleekTextMuted) },
+                        placeholder = { Text("https://ais-pre-sabqgpl76hvejgkua4tpwg-185379952770.europe-west2.run.app", fontSize = 12.sp, color = SleekTextMuted) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
