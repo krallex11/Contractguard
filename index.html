@@ -24,11 +24,10 @@
         }
     </script>
     
-    <!-- SignaturePad, html2canvas, jsPDF & html2pdf Bundle Libraries -->
+    <!-- SignaturePad, html2canvas & jsPDF Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- Print & PDF Styling -->
     <style>
@@ -215,21 +214,16 @@ Loading agreement terms...
                     </p>
                 </div>
 
-                <!-- Action Buttons Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                    <button id="downloadPdfBtn" class="py-3.5 px-4 bg-accentGreen hover:bg-accentGreenHover text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-accentGreen/10">
-                        <span>📥</span>
-                        <span>Download PDF</span>
+                <!-- Action Buttons Grid (Single-Page A4 PDF) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 max-w-md mx-auto">
+                    <button id="downloadPdfBtn" class="py-3.5 px-5 bg-accentGreen hover:bg-accentGreenHover text-slate-950 font-bold text-sm rounded-xl flex items-center justify-center gap-2.5 transition shadow-lg shadow-accentGreen/20">
+                        <span class="text-base">📥</span>
+                        <span>PDF İndir (A4)</span>
                     </button>
 
-                    <button id="printPdfBtn" class="py-3.5 px-4 bg-darkBg hover:bg-darkBorder border border-emerald-500/40 text-emerald-400 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition">
-                        <span>🖨️</span>
-                        <span>Print / Save as PDF</span>
-                    </button>
-
-                    <button id="sharePdfBtn" class="py-3.5 px-4 bg-darkBg hover:bg-darkBorder border border-accentGreen text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition">
-                        <span>📤</span>
-                        <span>Share Document</span>
+                    <button id="sharePdfBtn" class="py-3.5 px-5 bg-darkBg hover:bg-darkBorder border border-accentGreen text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2.5 transition shadow-md">
+                        <span class="text-base">📤</span>
+                        <span>PDF Paylaş (A4)</span>
                     </button>
                 </div>
             </div>
@@ -808,18 +802,18 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
             });
         }
 
-        // PDF Download Button - Uses Cached PDF Engine
+        // PDF Download Button (Single-Page A4)
         document.getElementById('downloadPdfBtn').addEventListener('click', () => {
             const downloadBtn = document.getElementById('downloadPdfBtn');
             const originalHtml = downloadBtn.innerHTML;
-            downloadBtn.innerHTML = '<span>⏳</span><span>Downloading PDF...</span>';
+            downloadBtn.innerHTML = '<span>⏳</span><span>İndiriliyor...</span>';
             downloadBtn.disabled = true;
 
             getOrGeneratePdfBlob().then((pdfBlob) => {
                 const blobUrl = URL.createObjectURL(pdfBlob);
                 const downloadLink = document.createElement('a');
                 downloadLink.href = blobUrl;
-                downloadLink.download = cachedPdfFileName || 'Signed_Contract.pdf';
+                downloadLink.download = cachedPdfFileName || 'Signed_Contract_A4.pdf';
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 setTimeout(() => {
@@ -832,32 +826,27 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 console.error('Download PDF error:', err);
                 downloadBtn.innerHTML = originalHtml;
                 downloadBtn.disabled = false;
-                window.print();
+                alert('PDF indirilemedi, lütfen tekrar deneyin.');
             });
         });
 
-        // Print / Native Save as PDF Button
-        document.getElementById('printPdfBtn').addEventListener('click', () => {
-            window.print();
-        });
-
-        // PDF Share Button - Uses Cached PDF Engine
+        // PDF Share Button (Single-Page A4)
         document.getElementById('sharePdfBtn').addEventListener('click', () => {
             const shareBtn = document.getElementById('sharePdfBtn');
             const originalHtml = shareBtn.innerHTML;
-            shareBtn.innerHTML = '<span>⏳</span><span>Preparing PDF...</span>';
+            shareBtn.innerHTML = '<span>⏳</span><span>Hazırlanıyor...</span>';
             shareBtn.disabled = true;
 
             getOrGeneratePdfBlob().then(async (pdfBlob) => {
                 shareBtn.innerHTML = originalHtml;
                 shareBtn.disabled = false;
 
-                const file = new File([pdfBlob], cachedPdfFileName || 'Signed_Contract.pdf', { type: 'application/pdf' });
+                const file = new File([pdfBlob], cachedPdfFileName || 'Signed_Contract_A4.pdf', { type: 'application/pdf' });
 
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
-                            title: title,
+                            title: title || 'ContractGuard Contract',
                             text: `ContractGuard E-Signed Agreement (${title})`,
                             files: [file]
                         });
@@ -867,7 +856,7 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 } else if (navigator.share) {
                     try {
                         await navigator.share({
-                            title: title,
+                            title: title || 'ContractGuard Contract',
                             text: `ContractGuard E-Signed Agreement (${title})`,
                             url: window.location.href
                         });
@@ -878,7 +867,7 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                     const blobUrl = URL.createObjectURL(pdfBlob);
                     const downloadLink = document.createElement('a');
                     downloadLink.href = blobUrl;
-                    downloadLink.download = cachedPdfFileName || 'Signed_Contract.pdf';
+                    downloadLink.download = cachedPdfFileName || 'Signed_Contract_A4.pdf';
                     document.body.appendChild(downloadLink);
                     downloadLink.click();
                     setTimeout(() => {
@@ -890,7 +879,7 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
                 console.error('Share PDF error:', err);
                 shareBtn.innerHTML = originalHtml;
                 shareBtn.disabled = false;
-                window.print();
+                alert('PDF paylaşılamadı, lütfen tekrar deneyin.');
             });
         });
     </script>
