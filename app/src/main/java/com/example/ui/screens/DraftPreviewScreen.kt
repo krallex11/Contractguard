@@ -4,8 +4,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -67,6 +71,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
@@ -119,6 +124,30 @@ fun DraftPreviewScreen(
 
     val remoteSigningLink = "$webHostBaseUrl/?id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle&text=$encodedContent${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
     val hasUserSigned = !contract.signatureBase64.isNullOrEmpty() || contract.status == "SIGNED"
+
+    val partyASigBitmap = remember(contract.signatureBase64) {
+        contract.signatureBase64?.let { base64 ->
+            try {
+                val cleanStr = base64.substringAfter("base64,")
+                val bytes = Base64.decode(cleanStr, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    val partyBSigBitmap = remember(contract.partyBSignatureBase64) {
+        contract.partyBSignatureBase64?.let { base64 ->
+            try {
+                val cleanStr = base64.substringAfter("base64,")
+                val bytes = Base64.decode(cleanStr, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
 
     Scaffold(
         containerColor = SleekDarkBackground,
@@ -335,7 +364,27 @@ fun DraftPreviewScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
 
+                            if (partyASigBitmap != null) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.White)
+                                        .padding(4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        bitmap = partyASigBitmap,
+                                        contentDescription = "Taraf A İmza Görseli",
+                                        modifier = Modifier.fillMaxHeight()
+                                    )
+                                }
+                            }
+
                             if (contract.signatureTimestamp != null) {
+                                Spacer(modifier = Modifier.height(4.dp))
                                 val signDate = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale("tr")).format(Date(contract.signatureTimestamp))
                                 Text(
                                     text = "İmza Tarihi: $signDate",
@@ -353,6 +402,25 @@ fun DraftPreviewScreen(
                                     color = SleekLimeGreenPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
+
+                                if (partyBSigBitmap != null) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(50.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.White)
+                                            .padding(4.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Image(
+                                            bitmap = partyBSigBitmap,
+                                            contentDescription = "Taraf B İmza Görseli",
+                                            modifier = Modifier.fillMaxHeight()
+                                        )
+                                    }
+                                }
 
                                 if (contract.partyBSignatureTimestamp != null) {
                                     val partyBSignDate = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale("tr")).format(Date(contract.partyBSignatureTimestamp))

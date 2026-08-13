@@ -589,14 +589,16 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
                 sigBImgHtml = `<div style="color: #15803d; font-weight: 700; font-size: 12px; text-align: center; padding-top: 10px;">✓ E-İmzalandı (${partyBVal})</div>`;
             }
 
-            // Create pristine fixed container offscreen for background rendering
+            // Create pristine container for background rendering
             const cleanDoc = document.createElement('div');
             cleanDoc.style.cssText = `
                 position: fixed;
-                top: -9999px;
-                left: -9999px;
+                top: 0;
+                left: 0;
                 width: 794px;
-                z-index: -99999;
+                z-index: -9999;
+                opacity: 0.01;
+                pointer-events: none;
                 background-color: #ffffff !important;
                 background: #ffffff !important;
                 color: #0f172a !important;
@@ -796,9 +798,9 @@ Taraflar birbirlerine ait ticari sır ve gizli bilgileri üçüncü şahıslarla
             }
         }
 
-        // PDF Download Button
+        // PDF Download Button (Integrated with native print engine for 100% reliable vector PDF)
         document.getElementById('downloadPdfBtn').addEventListener('click', () => {
-            generatePdfDocument('download');
+            window.print();
         });
 
         // Print / Native Save as PDF Button

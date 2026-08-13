@@ -198,7 +198,7 @@ fun SignaturePad(
             Button(
                 onClick = {
                     if (paths.isNotEmpty()) {
-                        val base64 = exportPathsToBase64(paths, 400, 200)
+                        val base64 = exportPathsToBase64(paths, 600, 300)
                         onSignatureCaptured(base64)
                     }
                 },
@@ -222,29 +222,67 @@ fun SignaturePad(
     }
 }
 
-private fun exportPathsToBase64(paths: List<Path>, width: Int, height: Int): String {
+private fun exportPathsToBase64(paths: List<Path>, targetWidth: Int = 600, targetHeight: Int = 300): String {
+    if (paths.isEmpty()) return ""
     return try {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        // Calculate exact bounding rectangle of all drawn signature paths
+        val totalBounds = android.graphics.RectF()
+        val pathBounds = android.graphics.RectF()
+
+        paths.forEachIndexed { index, composePath ->
+            val androidPath = composePath.asAndroidPath()
+            androidPath.computeBounds(pathBounds, true)
+            if (index == 0) {
+                totalBounds.set(pathBounds)
+            } else {
+                totalBounds.union(pathBounds)
+            }
+        }
+
+        val pathWidth = if (totalBounds.width() <= 0f) 1f else totalBounds.width()
+        val pathHeight = if (totalBounds.height() <= 0f) 1f else totalBounds.height()
+
+        // Create target bitmap canvas
+        val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
         val canvas = AndroidCanvas(bitmap)
         canvas.drawColor(AndroidColor.WHITE)
 
+        val padding = 32f
+        val availWidth = targetWidth - (padding * 2f)
+        val availHeight = targetHeight - (padding * 2f)
+
+        // Calculate scaling factor to fit bounds into bitmap
+        val scaleX = availWidth / pathWidth
+        val scaleY = availHeight / pathHeight
+        val scale = minOf(scaleX, scaleY)
+
+        // Calculate offset to center the signature bounding box in the bitmap
+        val dx = (targetWidth - (pathWidth * scale)) / 2f - (totalBounds.left * scale)
+        val dy = (targetHeight - (pathHeight * scale)) / 2f - (totalBounds.top * scale)
+
         val paint = AndroidPaint().apply {
-            color = AndroidColor.BLACK
+            color = AndroidColor.parseColor("#0F172A") // Slate navy black stroke matching web
             style = AndroidPaint.Style.STROKE
-            strokeWidth = 8f
+            strokeWidth = (6f / scale).coerceIn(3f, 10f)
             strokeCap = AndroidPaint.Cap.ROUND
             strokeJoin = AndroidPaint.Join.ROUND
             isAntiAlias = true
         }
 
+        canvas.save()
+        canvas.translate(dx, dy)
+        canvas.scale(scale, scale)
+
         paths.forEach { composePath ->
             canvas.drawPath(composePath.asAndroidPath(), paint)
         }
 
+        canvas.restore()
+
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
         val byteArray = outputStream.toByteArray()
-        Base64.encodeToString(byteArray, Base64.NO_WRAP)
+        "data:image/png;base64," + Base64.encodeToString(byteArray, Base64.NO_WRAP)
     } catch (e: Exception) {
         ""
     }
