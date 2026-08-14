@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Star
@@ -33,6 +34,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,12 +73,14 @@ fun PaywallBottomSheet(
     onDismiss: () -> Unit,
     onPurchaseMonthly: (Activity) -> Unit,
     onPurchaseSinglePass: (Activity) -> Unit,
-    onRestorePurchases: () -> Unit
+    onRestorePurchases: () -> Unit,
+    onManageSubscriptions: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val hasUsedSinglePass = billingUiState.hasUsedSinglePass
+    val isLoading = billingUiState.isLoading
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -125,7 +129,7 @@ fun PaywallBottomSheet(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
+                        contentDescription = "Close & Cancel",
                         tint = SleekTextMuted
                     )
                 }
@@ -155,7 +159,33 @@ fun PaywallBottomSheet(
                 lineHeight = 17.sp
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            if (isLoading) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SleekDarkSurface)
+                        .padding(10.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = SleekLimeGreenPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Connecting to Google Play...",
+                        fontSize = 12.sp,
+                        color = SleekLimeGreenPrimary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
 
             // Option 1: Monthly Unlimited Pro (Primary Recommendation)
             Card(
@@ -165,7 +195,7 @@ fun PaywallBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(22.dp))
-                    .clickable {
+                    .clickable(enabled = !isLoading) {
                         activity?.let { onPurchaseMonthly(it) }
                     }
                     .testTag("purchase_monthly_option")
@@ -233,6 +263,7 @@ fun PaywallBottomSheet(
 
                     Button(
                         onClick = { activity?.let { onPurchaseMonthly(it) } },
+                        enabled = !isLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = SleekLimeGreenPrimary,
                             contentColor = SleekLimeGreenOnPrimary
@@ -258,7 +289,7 @@ fun PaywallBottomSheet(
             Card(
                 colors = CardDefaults.cardColors(containerColor = SleekDarkSurface),
                 shape = RoundedCornerShape(22.dp),
-                border = BorderStroke(1.dp, if (hasUsedSinglePass) SleekDarkCardBorder else SleekDarkCardBorder),
+                border = BorderStroke(1.dp, SleekDarkCardBorder),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(22.dp))
@@ -275,7 +306,7 @@ fun PaywallBottomSheet(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(if (hasUsedSinglePass) Color(0xFF1E293B) else Color(0xFF1E293B)),
+                                    .background(Color(0xFF1E293B)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -332,6 +363,7 @@ fun PaywallBottomSheet(
 
                         OutlinedButton(
                             onClick = { activity?.let { onPurchaseSinglePass(it) } },
+                            enabled = !isLoading,
                             shape = RoundedCornerShape(14.dp),
                             border = BorderStroke(1.dp, SleekLimeGreenPrimary),
                             modifier = Modifier
@@ -358,6 +390,7 @@ fun PaywallBottomSheet(
 
                         Button(
                             onClick = { activity?.let { onPurchaseMonthly(it) } },
+                            enabled = !isLoading,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SleekDarkBackground,
                                 contentColor = SleekLimeGreenPrimary
@@ -374,14 +407,15 @@ fun PaywallBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Restore Purchases & Terms
+            // Restore Purchases & Manage Subscriptions
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(
                     onClick = onRestorePurchases,
+                    enabled = !isLoading,
                     modifier = Modifier.testTag("restore_purchases_button")
                 ) {
                     Icon(
@@ -390,17 +424,57 @@ fun PaywallBottomSheet(
                         tint = SleekTextMuted,
                         modifier = Modifier.size(14.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Restore Purchases",
                         fontSize = 12.sp,
                         color = SleekTextMuted
                     )
                 }
+
+                TextButton(
+                    onClick = onManageSubscriptions,
+                    modifier = Modifier.testTag("manage_subs_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Receipt,
+                        contentDescription = null,
+                        tint = SleekTextMuted,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Manage / Cancel in Play",
+                        fontSize = 12.sp,
+                        color = SleekTextMuted
+                    )
+                }
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Cancel / Dismiss Action
+            OutlinedButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, SleekDarkCardBorder),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(42.dp)
+                    .testTag("paywall_cancel_button")
+            ) {
+                Text(
+                    text = "Cancel & Close",
+                    fontSize = 13.sp,
+                    color = SleekTextMuted,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
-                text = "Subscriptions auto-renew monthly via Google Play until cancelled in Play Store settings. ESIGN Act & eIDAS legally compliant.",
+                text = "Subscriptions auto-renew monthly via Google Play until cancelled in Play Store settings. You can cancel anytime without penalty. ESIGN Act & eIDAS legally compliant.",
                 fontSize = 10.sp,
                 color = SleekTextMuted.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,

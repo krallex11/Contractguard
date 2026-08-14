@@ -107,7 +107,8 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
             onDismiss = { viewModel.dismissPaywall() },
             onPurchaseMonthly = { activity -> viewModel.purchaseMonthlyPlan(activity) },
             onPurchaseSinglePass = { activity -> viewModel.purchaseSinglePass(activity) },
-            onRestorePurchases = { viewModel.restorePurchases() }
+            onRestorePurchases = { viewModel.restorePurchases() },
+            onManageSubscriptions = { viewModel.openManageSubscriptions(context) }
         )
     }
 
@@ -146,6 +147,7 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
                         when (selectedTab) {
                             NavTab.HOME -> HomeScreen(
                                 savedContracts = allContracts,
+                                isLockedForNewContracts = !viewModel.canCreateNewContract(),
                                 onSelectTemplate = { type ->
                                     if (!viewModel.canCreateNewContract()) {
                                         Toast.makeText(
@@ -195,7 +197,8 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
 
                             NavTab.SETTINGS -> SettingsScreen(
                                 billingUiState = billingUiState,
-                                onOpenPaywall = { viewModel.openPaywall() }
+                                onOpenPaywall = { viewModel.openPaywall() },
+                                onManageSubscriptions = { viewModel.openManageSubscriptions(context) }
                             )
                         }
                     }

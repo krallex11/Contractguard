@@ -51,7 +51,8 @@ import com.example.ui.theme.SleekTextWhite
 @Composable
 fun SettingsScreen(
     billingUiState: BillingUiState = BillingUiState(),
-    onOpenPaywall: () -> Unit = {}
+    onOpenPaywall: () -> Unit = {},
+    onManageSubscriptions: () -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier
@@ -197,28 +198,49 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Button(
-                        onClick = onOpenPaywall,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SleekLimeGreenPrimary,
-                            contentColor = SleekLimeGreenOnPrimary
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Receipt,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Get Pass / Manage Subscription",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
+                        Button(
+                            onClick = onOpenPaywall,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SleekLimeGreenPrimary,
+                                contentColor = SleekLimeGreenOnPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Receipt,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (billingUiState.isMonthlySubscribed) "View Plan" else "Upgrade to Pro",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = onManageSubscriptions,
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SleekDarkCardBorder),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                        ) {
+                            Text(
+                                text = "Manage in Play",
+                                color = SleekTextMuted,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
                     }
                 }
             }

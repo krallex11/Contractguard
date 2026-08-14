@@ -68,6 +68,12 @@ class ContractViewModel @JvmOverloads constructor(
         billingManager.purchaseMonthlyPlan(activity) { success, msg ->
             if (success) {
                 _showPaywall.value = false
+                Toast.makeText(getApplication(), msg ?: "Monthly Pro subscription activated!", Toast.LENGTH_SHORT).show()
+            } else {
+                // If cancelled by user or error occurred:
+                msg?.let {
+                    Toast.makeText(getApplication(), it, Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -89,13 +95,25 @@ class ContractViewModel @JvmOverloads constructor(
                         _selectedContract.value = updated
                     }
                     _showPaywall.value = false
+                    Toast.makeText(getApplication(), msg ?: "Contract unlocked & archived permanently!", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // If cancelled by user or error occurred:
+                msg?.let {
+                    Toast.makeText(getApplication(), it, Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
+    fun openManageSubscriptions(context: Context) {
+        billingManager.openManageSubscriptions(context)
+    }
+
     fun restorePurchases() {
-        billingManager.restorePurchases { _, _ -> }
+        billingManager.restorePurchases { success, msg ->
+            Toast.makeText(getApplication(), msg, Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun loadContractById(id: Long) {
@@ -135,13 +153,18 @@ class ContractViewModel @JvmOverloads constructor(
      * Rule:
      * - Monthly Pro subscribers can create unlimited contracts.
      * - Free users who have not used their 1 Single Contract Pass can create 1 contract.
-     * - Users who have already purchased/used their 1 Single Contract Pass CANNOT create or generate any new contracts unless they subscribe to Monthly Pro.
+     * - If the user has already used their Single Contract Pass, or has a purchased/signed & archived contract,
+     *   they CANNOT select or create any new contracts without subscribing to Monthly Pro.
      */
     fun canCreateNewContract(): Boolean {
         val billing = billingUiState.value
         if (billing.isMonthlySubscribed) return true
-        if (!billing.hasUsedSinglePass) return true
-        return false
+        if (billing.hasUsedSinglePass) return false
+        val contracts = allContracts.value
+        if (contracts.any { it.isPurchasedPass || it.isLocked || it.status == "ARCHIVED" }) {
+            return false
+        }
+        return true
     }
 
     /**

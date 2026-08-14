@@ -63,6 +63,7 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
     private var billingClient: BillingClient? = null
     private var isPlayBillingConnected = false
     private var pendingPurchaseContractId: Long? = null
+    private var activePurchaseCallback: ((Boolean, String?) -> Unit)? = null
 
     companion object {
         private const val TAG = "BillingManager"
@@ -190,14 +191,41 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: MutableList<Purchase>?) {
         _uiState.value = _uiState.value.copy(isLoading = false)
 
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-            for (purchase in purchases) {
-                handlePurchase(purchase)
+        when (billingResult.responseCode) {
+            BillingClient.BillingResponseCode.OK -> {
+                if (purchases != null && purchases.isNotEmpty()) {
+                    for (purchase in purchases) {
+                        handlePurchase(purchase)
+                    }
+                    activePurchaseCallback?.invoke(true, "Purchase successful!")
+                } else {
+                    activePurchaseCallback?.invoke(false, "No purchases found.")
+                }
+                activePurchaseCallback = null
             }
-        } else if (billingResult.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
-            Log.d(TAG, "User canceled the purchase flow")
-        } else {
-            Log.w(TAG, "Purchase status: ${billingResult.responseCode} - ${billingResult.debugMessage}")
+            BillingClient.BillingResponseCode.USER_CANCELED -> {
+                Log.d(TAG, "User canceled the purchase flow")
+                pendingPurchaseContractId = null
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Purchase was cancelled."
+                )
+                activePurchaseCallback?.invoke(false, "Purchase was cancelled. No charges were made.")
+                activePurchaseCallback = null
+            }
+            else -> {
+                Log.w(TAG, "Purchase status: ${billingResult.responseCode} - ${billingResult.debugMessage}")
+                pendingPurchaseContractId = null
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Purchase could not be completed."
+                )
+                activePurchaseCallback?.invoke(
+                    false,
+                    "Purchase could not be completed (Code: ${billingResult.responseCode})."
+                )
+                activePurchaseCallback = null
+            }
         }
     }
 
@@ -324,10 +352,14 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
                 .build()
 
             _uiState.value = _uiState.value.copy(isLoading = true)
+            activePurchaseCallback = onResult
             val result = client.launchBillingFlow(activity, flowParams)
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                onResult(true, "Launching Google Play Purchase Flow...")
+                Log.d(TAG, "Launched Google Play Billing Flow for Monthly Subscription")
                 return
+            } else {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                activePurchaseCallback = null
             }
         }
 
@@ -347,7 +379,9 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
 
                     override fun onError(error: PurchasesError, userCancelled: Boolean) {
                         _uiState.value = _uiState.value.copy(isLoading = false)
-                        if (!userCancelled) {
+                        if (userCancelled) {
+                            onResult(false, "Purchase was cancelled. No charge was made.")
+                        } else {
                             onResult(false, error.message)
                         }
                     }
@@ -356,7 +390,7 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
             return
         }
 
-        // 3. Fallback for test environments
+        // 3. Fallback for test / sandbox environments
         setMonthlySubscribed(true)
         onResult(true, "Monthly Pro subscription activated successfully!")
     }
@@ -382,10 +416,14 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
                 .build()
 
             _uiState.value = _uiState.value.copy(isLoading = true)
+            activePurchaseCallback = onResult
             val result = client.launchBillingFlow(activity, flowParams)
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                onResult(true, "Launching Google Play Purchase Flow...")
+                Log.d(TAG, "Launched Google Play Billing Flow for Single Pass")
                 return
+            } else {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                activePurchaseCallback = null
             }
         }
 
@@ -405,7 +443,10 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
 
                     override fun onError(error: PurchasesError, userCancelled: Boolean) {
                         _uiState.value = _uiState.value.copy(isLoading = false)
-                        if (!userCancelled) {
+                        pendingPurchaseContractId = null
+                        if (userCancelled) {
+                            onResult(false, "Purchase was cancelled. No charge was made.")
+                        } else {
                             onResult(false, error.message)
                         }
                     }
@@ -417,6 +458,19 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
         // 3. Fallback
         markSinglePassPurchased(contractId)
         onResult(true, "Contract unlocked & archived permanently!")
+    }
+
+    fun openManageSubscriptions(context: Context) {
+        try {
+            val intent = android.content.Intent(
+                android.content.Intent.ACTION_VIEW,
+                android.net.Uri.parse("https://play.google.com/store/account/subscriptions")
+            )
+            intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not open Play Store subscriptions: ${e.message}")
+        }
     }
 
     fun restorePurchases(onResult: (Boolean, String) -> Unit) {

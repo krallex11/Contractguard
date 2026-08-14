@@ -62,6 +62,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     savedContracts: List<ContractEntity>,
+    isLockedForNewContracts: Boolean = false,
     onSelectTemplate: (ContractType) -> Unit,
     onOpenContractDetails: (Long) -> Unit,
     onSharePdf: (ContractEntity) -> Unit
@@ -109,19 +110,44 @@ fun HomeScreen(
         // Section Title
         item {
             Column(modifier = Modifier.padding(vertical = 2.dp)) {
-                Text(
-                    text = "Select Contract Type",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp,
-                        color = SleekTextWhite
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Select Contract Type",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 22.sp,
+                            color = SleekTextWhite
+                        )
                     )
-                )
+                    if (isLockedForNewContracts) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF331B1B))
+                                .border(1.dp, Color(0xFFFF5252).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "🔒 PRO REQUIRED",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF5252)
+                            )
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Choose a template to instantly build a US & EU compliant agreement on your phone.",
+                    text = if (isLockedForNewContracts)
+                        "1-time contract pass exhausted. Subscribe to Monthly Pro Unlimited to generate & customize new agreements."
+                    else
+                        "Choose a template to instantly build a US & EU compliant agreement on your phone.",
                     fontSize = 13.sp,
-                    color = SleekTextMuted,
+                    color = if (isLockedForNewContracts) SleekLimeGreenPrimary else SleekTextMuted,
                     lineHeight = 18.sp
                 )
             }
@@ -133,9 +159,10 @@ fun HomeScreen(
                 type = ContractType.SOFTWARE_DEV,
                 title = "Software Development Agreement",
                 subtitle = "For Web, Mobile App & SaaS Developers",
-                tagText = "Most Popular",
+                tagText = if (isLockedForNewContracts) "PRO REQUIRED" else "Most Popular",
                 targetUserText = "Freelance Software Engineers, Full-Stack Devs, & Technical Agencies",
                 icon = Icons.Default.Code,
+                isLocked = isLockedForNewContracts,
                 onClick = { onSelectTemplate(ContractType.SOFTWARE_DEV) },
                 testTag = "template_software_button"
             )
@@ -146,9 +173,10 @@ fun HomeScreen(
                 type = ContractType.GRAPHIC_DESIGN,
                 title = "Graphic & Logo Design Contract",
                 subtitle = "For Designers, Illustrators & UI/UX Creators",
-                tagText = "Essential",
+                tagText = if (isLockedForNewContracts) "PRO REQUIRED" else "Essential",
                 targetUserText = "Brand Designers, UI/UX Specialists, Illustrators & Visual Artists",
                 icon = Icons.Default.Palette,
+                isLocked = isLockedForNewContracts,
                 onClick = { onSelectTemplate(ContractType.GRAPHIC_DESIGN) },
                 testTag = "template_design_button"
             )
@@ -159,9 +187,10 @@ fun HomeScreen(
                 type = ContractType.SOCIAL_MEDIA,
                 title = "Social Media Management Agreement",
                 subtitle = "For SMMs, Content Creators & Growth Agencies",
-                tagText = "Recurring Income",
+                tagText = if (isLockedForNewContracts) "PRO REQUIRED" else "Recurring Income",
                 targetUserText = "Social Media Managers, Copywriters, Content Strategists & Agencies",
                 icon = Icons.Default.Share,
+                isLocked = isLockedForNewContracts,
                 onClick = { onSelectTemplate(ContractType.SOCIAL_MEDIA) },
                 testTag = "template_social_button"
             )
@@ -298,6 +327,7 @@ fun SleekTemplateCard(
     tagText: String,
     targetUserText: String,
     icon: ImageVector,
+    isLocked: Boolean = false,
     onClick: () -> Unit,
     testTag: String
 ) {
@@ -307,7 +337,11 @@ fun SleekTemplateCard(
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, SleekDarkCardBorder, RoundedCornerShape(24.dp))
+            .border(
+                1.dp,
+                if (isLocked) Color(0xFFFF5252).copy(alpha = 0.4f) else SleekDarkCardBorder,
+                RoundedCornerShape(24.dp)
+            )
             .testTag(testTag)
     ) {
         Row(
@@ -326,9 +360,9 @@ fun SleekTemplateCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = icon,
+                    imageVector = if (isLocked) Icons.Default.Lock else icon,
                     contentDescription = null,
-                    tint = SleekLimeGreenPrimary,
+                    tint = if (isLocked) Color(0xFFFF5252) else SleekLimeGreenPrimary,
                     modifier = Modifier.size(26.dp)
                 )
             }
@@ -359,15 +393,19 @@ fun SleekTemplateCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(SleekLimeGreenContainer)
-                            .border(1.dp, SleekLimeGreenBorder, RoundedCornerShape(20.dp))
+                            .background(if (isLocked) Color(0xFF331B1B) else SleekLimeGreenContainer)
+                            .border(
+                                1.dp,
+                                if (isLocked) Color(0xFFFF5252).copy(alpha = 0.5f) else SleekLimeGreenBorder,
+                                RoundedCornerShape(20.dp)
+                            )
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = tagText,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = SleekLimeGreenPrimary
+                            color = if (isLocked) Color(0xFFFF5252) else SleekLimeGreenPrimary
                         )
                     }
 
@@ -384,18 +422,18 @@ fun SleekTemplateCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Right Arrow Circle Action Button
+            // Right Circle Action Button (Arrow or Lock)
             Box(
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF1E293B)),
+                    .background(if (isLocked) Color(0xFF331B1B) else Color(0xFF1E293B)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Create",
-                    tint = SleekLimeGreenPrimary,
+                    imageVector = if (isLocked) Icons.Default.Lock else Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = if (isLocked) "Unlock Pro" else "Create",
+                    tint = if (isLocked) Color(0xFFFF5252) else SleekLimeGreenPrimary,
                     modifier = Modifier.size(16.dp)
                 )
             }
