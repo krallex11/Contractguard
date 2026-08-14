@@ -224,7 +224,8 @@ object PdfExporter {
             canvas.drawText(contract.partyA, leftBoxX + 12f, y + 28f, labelBoldPaint)
 
             if (!contract.signatureBase64.isNull_or_empty()) {
-                val imageBytes = Base64.decode(contract.signatureBase64, Base64.NO_WRAP)
+                val cleanSigA = contract.signatureBase64?.substringAfter("base64,") ?: ""
+                val imageBytes = Base64.decode(cleanSigA, Base64.DEFAULT)
                 val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
                 if (bitmap != null) {
                     val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 180, 60, true)
@@ -257,7 +258,8 @@ object PdfExporter {
             canvas.drawText(contract.partyB, rightBoxX + 12f, y + 28f, labelBoldPaint)
 
             if (!contract.partyBSignatureBase64.isNullOrEmpty()) {
-                val imageBytes = Base64.decode(contract.partyBSignatureBase64, Base64.NO_WRAP)
+                val cleanSigB = contract.partyBSignatureBase64?.substringAfter("base64,") ?: ""
+                val imageBytes = Base64.decode(cleanSigB, Base64.DEFAULT)
                 val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
                 if (bitmap != null) {
                     val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 180, 60, true)

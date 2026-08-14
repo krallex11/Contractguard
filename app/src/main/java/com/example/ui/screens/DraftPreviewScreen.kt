@@ -30,17 +30,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.AlertDialog
@@ -57,7 +52,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -78,8 +72,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.ContractEntity
 import com.example.ui.components.SignaturePad
 import com.example.ui.theme.SleekDarkBackground
@@ -100,47 +92,32 @@ import java.util.Locale
 fun DraftPreviewScreen(
     contract: ContractEntity,
     onAttachSignature: (String) -> Unit,
-    onAttachPartyBSignature: (String) -> Unit = {},
-    onDownloadPdf: () -> Unit = {},
+    onAttachPartyBSignature: (String) -> Unit,
+    onDownloadPdf: () -> Unit,
     onExportAndSharePdf: (String) -> Unit,
+    onCopyRemoteLink: (String, () -> Unit) -> Unit,
+    onShowQr: (() -> Unit) -> Unit,
     onDeleteContract: () -> Unit,
     onBackClicked: () -> Unit
 ) {
     val context = LocalContext.current
-    var showDeleteConfirm by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
-    var webHostBaseUrl by remember { mutableStateOf("https://contractguard-5511.vercel.app") }
-
     var showDomainDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var webHostBaseUrl by remember { mutableStateOf("https://contractguard-5511.vercel.app") }
     var tempDomainInput by remember { mutableStateOf(webHostBaseUrl) }
 
-    val encodedTitle = remember(contract.title) { java.net.URLEncoder.encode(contract.title, "UTF-8") }
-    val encodedPartyA = remember(contract.partyA) { java.net.URLEncoder.encode(contract.partyA, "UTF-8") }
-    val encodedPartyB = remember(contract.partyB) { java.net.URLEncoder.encode(contract.partyB, "UTF-8") }
-    val encodedType = remember(contract.type) { java.net.URLEncoder.encode(contract.type, "UTF-8") }
-    val encodedText = remember(contract.generatedDraftText) {
-        if (!contract.generatedDraftText.isNullOrEmpty()) {
-            try { java.net.URLEncoder.encode(contract.generatedDraftText, "UTF-8") } catch (e: Exception) { "" }
-        } else ""
-    }
+    val hasUserSigned = !contract.signatureBase64.isNullOrEmpty() || contract.status == "SIGNED" || contract.status == "ARCHIVED"
+    val isContractArchived = contract.isLocked || contract.isPurchasedPass || contract.status == "ARCHIVED"
 
-    val encodedSigA = remember(contract.signatureBase64) {
-        if (!contract.signatureBase64.isNullOrEmpty()) {
-            try { java.net.URLEncoder.encode(contract.signatureBase64, "UTF-8") } catch (e: Exception) { "" }
-        } else ""
-    }
+    val remoteSigningLink = "$webHostBaseUrl/sign/${contract.remoteSigningToken ?: contract.id}"
 
-    // Complete remote signing URL with contract type, full draft text, and dynamic signature
-    val remoteSigningLink = remember(webHostBaseUrl, contract.id, encodedPartyA, encodedPartyB, encodedTitle, encodedType, encodedText, encodedSigA) {
-        "$webHostBaseUrl/#id=${contract.id}&partyA=$encodedPartyA&partyB=$encodedPartyB&title=$encodedTitle&type=$encodedType${if (encodedText.isNotEmpty()) "&text=$encodedText" else ""}${if (encodedSigA.isNotEmpty()) "&sigA=$encodedSigA" else ""}"
-    }
-    val hasUserSigned = !contract.signatureBase64.isNullOrEmpty() || contract.status == "SIGNED"
-
+    // Safely decode signature bitmaps
     val partyASigBitmap = remember(contract.signatureBase64) {
         contract.signatureBase64?.let { base64 ->
             try {
-                val cleanStr = base64.substringAfter("base64,")
-                val bytes = Base64.decode(cleanStr, Base64.DEFAULT)
+                val cleanBase64 = if (base64.contains(",")) base64.substringAfter(",") else base64
+                val bytes = Base64.decode(cleanBase64, Base64.DEFAULT)
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
             } catch (e: Exception) {
                 null
@@ -151,8 +128,8 @@ fun DraftPreviewScreen(
     val partyBSigBitmap = remember(contract.partyBSignatureBase64) {
         contract.partyBSignatureBase64?.let { base64 ->
             try {
-                val cleanStr = base64.substringAfter("base64,")
-                val bytes = Base64.decode(cleanStr, Base64.DEFAULT)
+                val cleanBase64 = if (base64.contains(",")) base64.substringAfter(",") else base64
+                val bytes = Base64.decode(cleanBase64, Base64.DEFAULT)
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
             } catch (e: Exception) {
                 null
@@ -168,16 +145,15 @@ fun DraftPreviewScreen(
                     Column {
                         Text(
                             text = contract.title,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = SleekTextWhite
-                            )
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = SleekTextWhite,
+                            maxLines = 1
                         )
                         Text(
-                            text = "Contract Review & Execution",
+                            text = if (isContractArchived) "Archived Legal Record • Sealed" else if (hasUserSigned) "Signed • Ready to Export" else "Draft • Pending Signature",
                             fontSize = 11.5.sp,
-                            color = SleekTextMuted
+                            color = if (isContractArchived || hasUserSigned) SleekLimeGreenPrimary else SleekTextMuted
                         )
                     }
                 },
@@ -186,19 +162,13 @@ fun DraftPreviewScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = SleekLimeGreenPrimary
+                            tint = SleekTextWhite
                         )
                     }
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            if (hasUserSigned) {
-                                onExportAndSharePdf("")
-                            } else {
-                                Toast.makeText(context, "Please sign the contract first.", Toast.LENGTH_SHORT).show()
-                            }
-                        },
+                        onClick = { onExportAndSharePdf("") },
                         modifier = Modifier.testTag("share_pdf_button")
                     ) {
                         Icon(
@@ -209,20 +179,13 @@ fun DraftPreviewScreen(
                     }
 
                     IconButton(
-                        onClick = {
-                            if (hasUserSigned) {
-                                onDownloadPdf()
-                            } else {
-                                Toast.makeText(context, "Please sign the contract first.", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        enabled = hasUserSigned,
+                        onClick = onDownloadPdf,
                         modifier = Modifier.testTag("download_pdf_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.PictureAsPdf,
                             contentDescription = "Download PDF",
-                            tint = if (hasUserSigned) SleekLimeGreenPrimary else SleekTextMuted
+                            tint = SleekLimeGreenPrimary
                         )
                     }
 
@@ -256,7 +219,7 @@ fun DraftPreviewScreen(
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, SleekDarkCardBorder, RoundedCornerShape(20.dp))
+                        .border(1.dp, if (isContractArchived) SleekLimeGreenPrimary.copy(alpha = 0.6f) else SleekDarkCardBorder, RoundedCornerShape(20.dp))
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
@@ -270,7 +233,7 @@ fun DraftPreviewScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = if (hasUserSigned) Icons.Default.CheckCircle else Icons.Default.VerifiedUser,
+                                imageVector = if (isContractArchived) Icons.Default.Lock else if (hasUserSigned) Icons.Default.CheckCircle else Icons.Default.VerifiedUser,
                                 contentDescription = null,
                                 tint = SleekLimeGreenPrimary,
                                 modifier = Modifier.size(22.dp)
@@ -279,13 +242,13 @@ fun DraftPreviewScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (hasUserSigned) "E-Signed Legal Record" else "Contract Draft Pending Execution",
+                                text = if (isContractArchived) "ARCHIVED & CERTIFIED RECORD (IMMUTABLE)" else if (hasUserSigned) "E-Signed Legal Agreement" else "Draft Pending Signature",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = SleekTextWhite
+                                fontSize = 13.5.sp,
+                                color = if (isContractArchived) SleekLimeGreenPrimary else SleekTextWhite
                             )
                             Text(
-                                text = "US ESIGN Act & EU eIDAS Compliant • SHA-256 Audit Trail",
+                                text = if (isContractArchived) "Sealed against modifications. Unrestricted PDF export & sharing active." else "US ESIGN Act & EU eIDAS Compliant • SHA-256 Audit Trail",
                                 fontSize = 11.sp,
                                 color = SleekTextMuted
                             )
@@ -342,7 +305,7 @@ fun DraftPreviewScreen(
 
             // Signature Pad or E-Signature Seal Display (Party A)
             item {
-                if (contract.status == "SIGNED" && !contract.signatureBase64.isNullOrEmpty()) {
+                if (hasUserSigned || isContractArchived) {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = SleekDarkSurface),
                         shape = RoundedCornerShape(20.dp),
@@ -380,7 +343,7 @@ fun DraftPreviewScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(50.dp)
+                                        .height(54.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(Color.White)
                                         .padding(4.dp),
@@ -419,7 +382,7 @@ fun DraftPreviewScreen(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(50.dp)
+                                            .height(54.dp)
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(Color.White)
                                             .padding(4.dp),
@@ -436,7 +399,7 @@ fun DraftPreviewScreen(
                                 if (contract.partyBSignatureTimestamp != null) {
                                     val partyBSignDate = SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.US).format(Date(contract.partyBSignatureTimestamp))
                                     Text(
-                                        text = "Recipient Signed Date: $partyBSignDate (Verified via Portal)",
+                                        text = "Recipient Signed Date: $partyBSignDate (Verified via Web Portal)",
                                         fontSize = 11.5.sp,
                                         color = SleekTextMuted
                                     )
@@ -452,7 +415,7 @@ fun DraftPreviewScreen(
                                         .background(Color(0xFF0F172A))
                                         .border(1.dp, SleekDarkCardBorder, RoundedCornerShape(10.dp))
                                         .padding(10.dp)
-                                ) {
+                                    ) {
                                     Text(
                                         text = "SHA-256 Audit Seal: ${contract.signatureHash}",
                                         fontSize = 10.5.sp,
@@ -460,6 +423,16 @@ fun DraftPreviewScreen(
                                         color = SleekLimeGreenPrimary
                                     )
                                 }
+                            }
+
+                            if (isContractArchived) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "🔒 Sealed: Changes to terms and signatures on this archived contract are disabled.",
+                                    fontSize = 11.sp,
+                                    color = SleekTextMuted,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                )
                             }
                         }
                     }
@@ -474,14 +447,14 @@ fun DraftPreviewScreen(
                 }
             }
 
-            // Bottom Action Card for PDF Download & Share
+            // Bottom Action Card for PDF Download & Share (Always clickable)
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = SleekDarkSurface),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, if (hasUserSigned) SleekLimeGreenPrimary.copy(alpha = 0.5f) else SleekDarkCardBorder, RoundedCornerShape(20.dp))
+                        .border(1.dp, SleekLimeGreenPrimary.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -491,19 +464,19 @@ fun DraftPreviewScreen(
                             Icon(
                                 imageVector = Icons.Default.PictureAsPdf,
                                 contentDescription = null,
-                                tint = if (hasUserSigned) SleekLimeGreenPrimary else SleekTextMuted,
+                                tint = SleekLimeGreenPrimary,
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "E-Signed PDF Document",
+                                    text = "Official PDF Contract",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
                                     color = SleekTextWhite
                                 )
                                 Text(
-                                    text = if (hasUserSigned) "Download or share the official PDF contract directly." else "PDF download will unlock after applying your signature.",
+                                    text = if (isContractArchived) "Unrestricted access • Download or share anytime." else "Download or share the certified legal agreement.",
                                     fontSize = 11.5.sp,
                                     color = SleekTextMuted
                                 )
@@ -517,19 +490,10 @@ fun DraftPreviewScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Button(
-                                onClick = {
-                                    if (hasUserSigned) {
-                                        onDownloadPdf()
-                                    } else {
-                                        Toast.makeText(context, "Please sign the contract first.", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                enabled = hasUserSigned,
+                                onClick = onDownloadPdf,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = SleekLimeGreenPrimary,
-                                    contentColor = SleekLimeGreenOnPrimary,
-                                    disabledContainerColor = SleekDarkCardBorder,
-                                    disabledContentColor = SleekTextMuted
+                                    contentColor = SleekLimeGreenOnPrimary
                                 ),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier
@@ -547,16 +511,9 @@ fun DraftPreviewScreen(
                             }
 
                             OutlinedButton(
-                                onClick = {
-                                    if (hasUserSigned) {
-                                        onExportAndSharePdf("")
-                                    } else {
-                                        Toast.makeText(context, "Please sign the contract first.", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                enabled = hasUserSigned,
+                                onClick = { onExportAndSharePdf("") },
                                 shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, if (hasUserSigned) SleekLimeGreenPrimary else SleekDarkCardBorder),
+                                border = BorderStroke(1.dp, SleekLimeGreenPrimary),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(46.dp)
@@ -565,25 +522,25 @@ fun DraftPreviewScreen(
                                 Icon(
                                     imageVector = Icons.Default.Share,
                                     contentDescription = null,
-                                    tint = if (hasUserSigned) SleekLimeGreenPrimary else SleekTextMuted,
+                                    tint = SleekLimeGreenPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Share PDF", color = if (hasUserSigned) SleekTextWhite else SleekTextMuted, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text("Share PDF", color = SleekTextWhite, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                             }
                         }
                     }
                 }
             }
 
-            // Remote Counterparty E-Signature Module at Very Bottom
+            // Remote Counterparty E-Signature Module at Very Bottom (Always clickable)
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = SleekDarkSurface),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, if (hasUserSigned) SleekLimeGreenPrimary.copy(alpha = 0.3f) else SleekDarkCardBorder, RoundedCornerShape(20.dp))
+                        .border(1.dp, SleekLimeGreenPrimary.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -595,7 +552,7 @@ fun DraftPreviewScreen(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Send,
                                     contentDescription = null,
-                                    tint = if (hasUserSigned) SleekLimeGreenPrimary else SleekTextMuted,
+                                    tint = SleekLimeGreenPrimary,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
@@ -634,130 +591,119 @@ fun DraftPreviewScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        if (!hasUserSigned) {
-                            // Locked State Notice
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF0F172A))
-                                    .border(1.dp, SleekDarkCardBorder, RoundedCornerShape(12.dp))
-                                    .padding(12.dp)
-                            ) {
-                                Text(
-                                    text = "🔒 Applying your own signature unlocks the remote signing link & QR code for the recipient.",
-                                    fontSize = 12.sp,
-                                    color = SleekTextMuted,
-                                    lineHeight = 17.sp
-                                )
-                            }
-                        } else {
-                            // Unlocked Active State
+                        Text(
+                            text = "Share this link with ${contract.partyB} to let them review and sign via web browser:",
+                            fontSize = 11.5.sp,
+                            color = SleekTextMuted,
+                            lineHeight = 16.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF0F172A))
+                                .border(1.dp, SleekDarkCardBorder, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Text(
-                                text = "Share the link below with ${contract.partyB} to let them review and sign the agreement via web portal:",
-                                fontSize = 11.5.sp,
-                                color = SleekTextMuted,
-                                lineHeight = 16.sp
+                                text = remoteSigningLink,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = SleekLimeGreenPrimary,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
                             )
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF0F172A))
-                                    .border(1.dp, SleekDarkCardBorder, RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            IconButton(
+                                onClick = {
+                                    tempDomainInput = webHostBaseUrl
+                                    showDomainDialog = true
+                                },
+                                modifier = Modifier.size(24.dp)
                             ) {
-                                Text(
-                                    text = remoteSigningLink,
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = SleekLimeGreenPrimary,
-                                    maxLines = 1,
-                                    modifier = Modifier.weight(1f)
+                                Icon(
+                                    imageVector = Icons.Default.Language,
+                                    contentDescription = "Edit Domain",
+                                    tint = SleekTextMuted,
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                IconButton(
-                                    onClick = {
-                                        tempDomainInput = webHostBaseUrl
-                                        showDomainDialog = true
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Language,
-                                        contentDescription = "Edit Domain",
-                                        tint = SleekTextMuted,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    onCopyRemoteLink(remoteSigningLink) {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        val clip = ClipData.newPlainText("Remote Signing Link", remoteSigningLink)
+                                        clipboard.setPrimaryClip(clip)
+                                        Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f).testTag("copy_remote_link_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = null,
+                                    tint = SleekLimeGreenPrimary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Copy Link", fontSize = 11.sp, color = SleekTextWhite)
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = {
-                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        clipboard.setPrimaryClip(ClipData.newPlainText("Signing Link", remoteSigningLink))
-                                        Toast.makeText(context, "Signing link copied to clipboard!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f).testTag("copy_remote_link_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = null,
-                                        tint = SleekLimeGreenPrimary,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Copy Link", fontSize = 11.sp, color = SleekTextWhite)
-                                }
-
-                                OutlinedButton(
-                                    onClick = {
+                            OutlinedButton(
+                                onClick = {
+                                    onCopyRemoteLink(remoteSigningLink) {
                                         val sendIntent: Intent = Intent().apply {
                                             action = Intent.ACTION_SEND
-                                            putExtra(Intent.EXTRA_TEXT, "Please review and sign the contract '${contract.title}' using this link:\n$remoteSigningLink")
+                                            putExtra(Intent.EXTRA_TEXT, "Please review and sign the contract '${contract.title}' using this secure link:\n$remoteSigningLink")
                                             type = "text/plain"
                                         }
                                         val shareIntent = Intent.createChooser(sendIntent, "Share Remote Signing Link")
                                         context.startActivity(shareIntent)
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f).testTag("share_remote_link_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Share,
-                                        contentDescription = null,
-                                        tint = SleekLimeGreenPrimary,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Share Link", fontSize = 11.sp, color = SleekTextWhite)
-                                }
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f).testTag("share_remote_link_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = null,
+                                    tint = SleekLimeGreenPrimary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Share Link", fontSize = 11.sp, color = SleekTextWhite)
+                            }
 
-                                OutlinedButton(
-                                    onClick = { showQrDialog = true },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f).testTag("show_qr_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.QrCode,
-                                        contentDescription = null,
-                                        tint = SleekLimeGreenPrimary,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Show QR", fontSize = 11.sp, color = SleekTextWhite)
-                                }
+                            OutlinedButton(
+                                onClick = {
+                                    onShowQr {
+                                        showQrDialog = true
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f).testTag("show_qr_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCode,
+                                    contentDescription = null,
+                                    tint = SleekLimeGreenPrimary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Show QR", fontSize = 11.sp, color = SleekTextWhite)
                             }
                         }
                     }
@@ -785,7 +731,7 @@ fun DraftPreviewScreen(
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Have ${contract.partyB} scan this QR code with their mobile camera to open the e-signature portal.",
+                        text = "Have ${contract.partyB} scan this QR code to open the e-signature web portal.",
                         fontSize = 12.sp,
                         color = SleekTextMuted
                     )

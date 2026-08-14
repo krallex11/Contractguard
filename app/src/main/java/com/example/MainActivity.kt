@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,13 +23,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.NavTab
+import com.example.ui.components.PaywallBottomSheet
 import com.example.ui.components.SleekBottomNavBar
 import com.example.ui.screens.DraftPreviewScreen
 import com.example.ui.screens.FormInputScreen
@@ -56,7 +59,6 @@ import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SignaturesScreen
 import com.example.ui.theme.ContractGuardTheme
 import com.example.ui.theme.SleekDarkBackground
-import com.example.ui.theme.SleekDarkCardBorder
 import com.example.ui.theme.SleekLimeGreenContainer
 import com.example.ui.theme.SleekLimeGreenPrimary
 import com.example.ui.theme.SleekTextMuted
@@ -95,20 +97,29 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
     val allContracts by viewModel.allContracts.collectAsStateWithLifecycle()
     val formState by viewModel.formState.collectAsStateWithLifecycle()
     val selectedContract by viewModel.selectedContract.collectAsStateWithLifecycle()
-    val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
 
-    LaunchedEffect(toastMessage) {
-        toastMessage?.let { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-            viewModel.clearToast()
-        }
+    val billingUiState by viewModel.billingUiState.collectAsStateWithLifecycle()
+    val showPaywallSheet by viewModel.showPaywall.collectAsStateWithLifecycle()
+
+    if (showPaywallSheet) {
+        PaywallBottomSheet(
+            billingUiState = billingUiState,
+            onDismiss = { viewModel.dismissPaywall() },
+            onPurchaseMonthly = { activity -> viewModel.purchaseMonthlyPlan(activity) },
+            onPurchaseSinglePass = { activity -> viewModel.purchaseSinglePass(activity) },
+            onRestorePurchases = { viewModel.restorePurchases() }
+        )
     }
 
     Scaffold(
         containerColor = SleekDarkBackground,
         topBar = {
             if (currentScreen == ScreenState.MAIN_TABS) {
-                SleekHeaderBar()
+                SleekHeaderBar(
+                    isMonthlySubscribed = billingUiState.isMonthlySubscribed,
+                    hasUsedSinglePass = billingUiState.hasUsedSinglePass,
+                    onOpenPaywall = { viewModel.openPaywall() }
+                )
             }
         },
         bottomBar = {
@@ -136,8 +147,17 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
                             NavTab.HOME -> HomeScreen(
                                 savedContracts = allContracts,
                                 onSelectTemplate = { type ->
-                                    viewModel.selectContractTypeForNew(type)
-                                    currentScreen = ScreenState.FORM_INPUT
+                                    if (!viewModel.canCreateNewContract()) {
+                                        Toast.makeText(
+                                            context,
+                                            "Single Contract Pass has already been used for 1 contract. Upgrade to Monthly Pro to create new contracts.",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        viewModel.openPaywall()
+                                    } else {
+                                        viewModel.selectContractTypeForNew(type)
+                                        currentScreen = ScreenState.FORM_INPUT
+                                    }
                                 },
                                 onOpenContractDetails = { id ->
                                     viewModel.loadContractById(id)
@@ -145,7 +165,7 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
                                 },
                                 onSharePdf = { contract ->
                                     viewModel.loadContractById(contract.id)
-                                    viewModel.exportAndSharePdf(context)
+                                    viewModel.exportAndSharePdfWithQuota(context)
                                 }
                             )
 
@@ -157,7 +177,7 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
                                 },
                                 onSharePdf = { contract ->
                                     viewModel.loadContractById(contract.id)
-                                    viewModel.exportAndSharePdf(context)
+                                    viewModel.exportAndSharePdfWithQuota(context)
                                 }
                             )
 
@@ -169,11 +189,14 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
                                 },
                                 onSharePdf = { contract ->
                                     viewModel.loadContractById(contract.id)
-                                    viewModel.exportAndSharePdf(context)
+                                    viewModel.exportAndSharePdfWithQuota(context)
                                 }
                             )
 
-                            NavTab.SETTINGS -> SettingsScreen()
+                            NavTab.SETTINGS -> SettingsScreen(
+                                billingUiState = billingUiState,
+                                onOpenPaywall = { viewModel.openPaywall() }
+                            )
                         }
                     }
 
@@ -186,7 +209,7 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
                                 viewModel.updateFormField(fieldId, valStr)
                             },
                             onGenerateClicked = {
-                                viewModel.generateAndSaveContract { newId ->
+                                viewModel.generateAndSaveContract(context) { newId ->
                                     currentScreen = ScreenState.DRAFT_PREVIEW
                                 }
                             },
@@ -208,10 +231,16 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
                                     viewModel.attachPartyBSignatureAndSign(context, partyBSigBase64)
                                 },
                                 onDownloadPdf = {
-                                    viewModel.downloadAndOpenPdf(context)
+                                    viewModel.downloadAndOpenPdfWithQuota(context)
                                 },
                                 onExportAndSharePdf = { recipientEmail ->
-                                    viewModel.exportAndSharePdf(context, recipientEmail)
+                                    viewModel.exportAndSharePdfWithQuota(context, recipientEmail)
+                                },
+                                onCopyRemoteLink = { link, action ->
+                                    viewModel.copyOrShareRemoteLinkWithQuota(context, link, action)
+                                },
+                                onShowQr = { action ->
+                                    viewModel.showQrCodeWithQuota(action)
                                 },
                                 onDeleteContract = {
                                     viewModel.deleteContract(currentContract)
@@ -235,7 +264,11 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
 }
 
 @Composable
-fun SleekHeaderBar() {
+fun SleekHeaderBar(
+    isMonthlySubscribed: Boolean = false,
+    hasUsedSinglePass: Boolean = false,
+    onOpenPaywall: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -261,21 +294,52 @@ fun SleekHeaderBar() {
             )
         }
 
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(SleekLimeGreenContainer)
-                .border(1.dp, SleekLimeGreenPrimary.copy(alpha = 0.3f), CircleShape),
-            contentAlignment = Alignment.Center
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Shield,
-                contentDescription = null,
-                tint = SleekLimeGreenPrimary,
-                modifier = Modifier.size(22.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SleekLimeGreenContainer)
+                    .border(1.dp, SleekLimeGreenPrimary.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                    .clickable(onClick = onOpenPaywall)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = SleekLimeGreenPrimary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (isMonthlySubscribed) "PRO ACTIVE"
+                        else if (hasUsedSinglePass) "PASS: 1/1 USED"
+                        else "UPGRADE",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SleekLimeGreenPrimary
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(SleekLimeGreenContainer)
+                    .border(1.dp, SleekLimeGreenPrimary.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = null,
+                    tint = SleekLimeGreenPrimary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
         }
     }
 }
-

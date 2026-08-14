@@ -410,6 +410,7 @@ fun SleekSavedContractItem(
     onSharePdf: () -> Unit
 ) {
     val dateString = SimpleDateFormat("MMM dd, yyyy • HH:mm", Locale.US).format(Date(contract.updatedAt))
+    val isArchived = contract.isLocked || contract.isPurchasedPass || contract.status == "ARCHIVED"
 
     Card(
         onClick = onClick,
@@ -417,7 +418,7 @@ fun SleekSavedContractItem(
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, SleekDarkCardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, if (isArchived) SleekLimeGreenPrimary.copy(alpha = 0.5f) else SleekDarkCardBorder, RoundedCornerShape(20.dp))
     ) {
         Row(
             modifier = Modifier
@@ -430,15 +431,15 @@ fun SleekSavedContractItem(
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
-                        if (contract.status == "SIGNED") SleekLimeGreenContainer
+                        if (isArchived || contract.status == "SIGNED") SleekLimeGreenContainer
                         else Color(0xFF0F172A)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (contract.status == "SIGNED") Icons.Default.CheckCircle else Icons.Default.PictureAsPdf,
+                    imageVector = if (isArchived) Icons.Default.Lock else if (contract.status == "SIGNED") Icons.Default.CheckCircle else Icons.Default.PictureAsPdf,
                     contentDescription = null,
-                    tint = if (contract.status == "SIGNED") SleekLimeGreenPrimary else SleekTextMuted,
+                    tint = if (isArchived || contract.status == "SIGNED") SleekLimeGreenPrimary else SleekTextMuted,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -446,12 +447,37 @@ fun SleekSavedContractItem(
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = contract.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = SleekTextWhite
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = contract.title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = SleekTextWhite,
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 1
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    if (isArchived) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(SleekLimeGreenContainer)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text("ARCHIVED", fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, color = SleekLimeGreenPrimary)
+                        }
+                    } else if (contract.status == "SIGNED") {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF1E293B))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text("SIGNED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = SleekLimeGreenPrimary)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "${contract.partyA} • ${contract.partyB}",
                     fontSize = 11.5.sp,

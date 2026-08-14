@@ -67,7 +67,9 @@ data class ContractEntity(
     val signatureHash: String? = null,
     val remoteSigningToken: String? = null,
     val pdfPath: String? = null,
-    val status: String = "DRAFT", // DRAFT, SIGNED, EXPORTED, PENDING_REMOTE_SIGN
+    val status: String = "DRAFT", // DRAFT, SIGNED, ARCHIVED, EXPORTED
+    val isPurchasedPass: Boolean = false,
+    val isLocked: Boolean = false, // immutable once archived/purchased
     val isCloudSynced: Boolean = true,
     val isEncrypted: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
