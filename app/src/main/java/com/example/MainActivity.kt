@@ -57,6 +57,7 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.SavedContractsScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SignaturesScreen
+import com.example.ui.screens.SplashScreen
 import com.example.ui.theme.ContractGuardTheme
 import com.example.ui.theme.SleekDarkBackground
 import com.example.ui.theme.SleekLimeGreenContainer
@@ -66,6 +67,7 @@ import com.example.ui.theme.SleekTextWhite
 import com.example.ui.viewmodel.ContractViewModel
 
 enum class ScreenState {
+    SPLASH,
     MAIN_TABS,
     FORM_INPUT,
     DRAFT_PREVIEW
@@ -91,7 +93,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ContractGuardApp(viewModel: ContractViewModel) {
     val context = LocalContext.current
-    var currentScreen by remember { mutableStateOf(ScreenState.MAIN_TABS) }
+    var currentScreen by remember { mutableStateOf(ScreenState.SPLASH) }
     var selectedTab by remember { mutableStateOf(NavTab.HOME) }
 
     val allContracts by viewModel.allContracts.collectAsStateWithLifecycle()
@@ -143,6 +145,14 @@ fun ContractGuardApp(viewModel: ContractViewModel) {
                 label = "ScreenTransition"
             ) { targetScreen ->
                 when (targetScreen) {
+                    ScreenState.SPLASH -> {
+                        SplashScreen(
+                            onSplashFinished = {
+                                currentScreen = ScreenState.MAIN_TABS
+                            }
+                        )
+                    }
+
                     ScreenState.MAIN_TABS -> {
                         when (selectedTab) {
                             NavTab.HOME -> HomeScreen(
