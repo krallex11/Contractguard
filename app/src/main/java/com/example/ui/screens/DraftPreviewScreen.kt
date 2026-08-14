@@ -110,7 +110,19 @@ fun DraftPreviewScreen(
     val hasUserSigned = !contract.signatureBase64.isNullOrEmpty() || contract.status == "SIGNED" || contract.status == "ARCHIVED"
     val isContractArchived = contract.isLocked || contract.isPurchasedPass || contract.status == "ARCHIVED"
 
-    val remoteSigningLink = "$webHostBaseUrl/sign/${contract.remoteSigningToken ?: contract.id}"
+    val remoteSigningLink = remember(webHostBaseUrl, contract) {
+        try {
+            val encodedTitle = java.net.URLEncoder.encode(contract.title, "UTF-8")
+            val encodedPartyA = java.net.URLEncoder.encode(contract.partyA, "UTF-8")
+            val encodedPartyB = java.net.URLEncoder.encode(contract.partyB, "UTF-8")
+            val encodedType = java.net.URLEncoder.encode(contract.type, "UTF-8")
+            val idVal = contract.remoteSigningToken ?: contract.id.toString()
+            val cleanBase = webHostBaseUrl.trimEnd('/')
+            "$cleanBase/?id=$idVal&type=$encodedType&title=$encodedTitle&partyA=$encodedPartyA&partyB=$encodedPartyB"
+        } catch (e: Exception) {
+            "${webHostBaseUrl.trimEnd('/')}/?id=${contract.id}"
+        }
+    }
 
     // Safely decode signature bitmaps
     val partyASigBitmap = remember(contract.signatureBase64) {

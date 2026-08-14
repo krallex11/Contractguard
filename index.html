@@ -540,19 +540,28 @@ IN WITNESS WHEREOF, the Parties execute this Agreement electronically.`;
 
         try {
             let rawQuery = '';
-            if (window.location.hash && window.location.hash.length > 1) {
-                rawQuery = window.location.hash.substring(1);
-            } else if (window.location.search && window.location.search.length > 1) {
+            if (window.location.search && window.location.search.length > 1) {
                 rawQuery = window.location.search.substring(1);
+            } else if (window.location.hash && window.location.hash.length > 1) {
+                rawQuery = window.location.hash.substring(1);
             }
             rawQuery = rawQuery.replace(/^[?#]/, '');
 
             const urlParams = new URLSearchParams(rawQuery);
-            contractId = safeDecode(urlParams.get('id'), 'SAMPLE-101');
-            partyA = safeDecode(urlParams.get('partyA'), 'Acme Corporation Inc.');
-            partyB = safeDecode(urlParams.get('partyB'), 'Alex Rivera (Apex Software LLC)');
-            title = safeDecode(urlParams.get('title'), 'Software Development Agreement');
-            contractType = safeDecode(urlParams.get('type'), 'SOFTWARE_DEV');
+            if (urlParams.has('id')) {
+                contractId = safeDecode(urlParams.get('id'), 'SAMPLE-101');
+            } else {
+                const pathParts = window.location.pathname.split('/').filter(Boolean);
+                if (pathParts.length >= 2 && (pathParts[0] === 'sign' || pathParts[0] === 'contract')) {
+                    contractId = safeDecode(pathParts[1], 'SAMPLE-101');
+                } else if (pathParts.length === 1 && pathParts[0] !== 'index.html') {
+                    contractId = safeDecode(pathParts[0], 'SAMPLE-101');
+                }
+            }
+            if (urlParams.has('partyA')) partyA = safeDecode(urlParams.get('partyA'), 'Acme Corporation Inc.');
+            if (urlParams.has('partyB')) partyB = safeDecode(urlParams.get('partyB'), 'Alex Rivera (Apex Software LLC)');
+            if (urlParams.has('title')) title = safeDecode(urlParams.get('title'), 'Software Development Agreement');
+            if (urlParams.has('type')) contractType = safeDecode(urlParams.get('type'), 'SOFTWARE_DEV');
             
             const rawSigA = urlParams.get('sigA');
             if (rawSigA && rawSigA.trim().length > 10) {
