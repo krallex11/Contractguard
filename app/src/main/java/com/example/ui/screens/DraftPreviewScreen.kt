@@ -112,13 +112,43 @@ fun DraftPreviewScreen(
 
     val remoteSigningLink = remember(webHostBaseUrl, contract) {
         try {
+            val cleanBase = webHostBaseUrl.trimEnd('/')
+            val idVal = contract.remoteSigningToken ?: contract.id.toString()
             val encodedTitle = java.net.URLEncoder.encode(contract.title, "UTF-8")
             val encodedPartyA = java.net.URLEncoder.encode(contract.partyA, "UTF-8")
             val encodedPartyB = java.net.URLEncoder.encode(contract.partyB, "UTF-8")
             val encodedType = java.net.URLEncoder.encode(contract.type, "UTF-8")
-            val idVal = contract.remoteSigningToken ?: contract.id.toString()
-            val cleanBase = webHostBaseUrl.trimEnd('/')
-            "$cleanBase/?id=$idVal&type=$encodedType&title=$encodedTitle&partyA=$encodedPartyA&partyB=$encodedPartyB"
+            val encodedText = java.net.URLEncoder.encode(contract.generatedDraftText, "UTF-8")
+
+            val sigAVal = contract.signatureBase64?.let { rawSig ->
+                if (rawSig.isNotBlank()) java.net.URLEncoder.encode(rawSig, "UTF-8") else null
+            }
+            val hashVal = contract.signatureHash?.let {
+                if (it.isNotBlank()) java.net.URLEncoder.encode(it, "UTF-8") else null
+            }
+            val timeVal = contract.signatureTimestamp ?: 0L
+
+            val queryPart = "?id=$idVal&type=$encodedType&title=$encodedTitle&partyA=$encodedPartyA&partyB=$encodedPartyB"
+            val hashBuilder = StringBuilder("#id=").append(idVal)
+                .append("&title=").append(encodedTitle)
+                .append("&partyA=").append(encodedPartyA)
+                .append("&partyB=").append(encodedPartyB)
+                .append("&type=").append(encodedType)
+
+            if (encodedText.isNotEmpty()) {
+                hashBuilder.append("&text=").append(encodedText)
+            }
+            if (!sigAVal.isNullOrEmpty()) {
+                hashBuilder.append("&sigA=").append(sigAVal)
+            }
+            if (!hashVal.isNullOrEmpty()) {
+                hashBuilder.append("&hash=").append(hashVal)
+            }
+            if (timeVal > 0) {
+                hashBuilder.append("&time=").append(timeVal)
+            }
+
+            "$cleanBase/$queryPart${hashBuilder.toString()}"
         } catch (e: Exception) {
             "${webHostBaseUrl.trimEnd('/')}/?id=${contract.id}"
         }
