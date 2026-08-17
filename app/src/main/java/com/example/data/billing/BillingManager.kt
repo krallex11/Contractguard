@@ -10,6 +10,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
@@ -82,14 +83,18 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
     }
 
     // -----------------------------------------------------------------------------------------
-    // GOOGLE PLAY BILLING LIBRARY INTEGRATION (v7.1.1)
+    // GOOGLE PLAY BILLING LIBRARY INTEGRATION (v8.0.0)
     // -----------------------------------------------------------------------------------------
 
     private fun setupGooglePlayBillingClient() {
         try {
+            val pendingPurchasesParams = PendingPurchasesParams.newBuilder()
+                .enableOneTimeProducts()
+                .build()
+
             billingClient = BillingClient.newBuilder(context)
                 .setListener(this)
-                .enablePendingPurchases()
+                .enablePendingPurchases(pendingPurchasesParams)
                 .build()
 
             startBillingConnection()
@@ -131,9 +136,9 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
                 .build()
         )
         val subParams = QueryProductDetailsParams.newBuilder().setProductList(subProductList).build()
-        client.queryProductDetailsAsync(subParams) { billingResult, productDetailsList ->
+        client.queryProductDetailsAsync(subParams) { billingResult, queryProductDetailsResult ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                val details = productDetailsList.firstOrNull()
+                val details = queryProductDetailsResult.productDetailsList.firstOrNull()
                 if (details != null) {
                     val price = details.subscriptionOfferDetails?.firstOrNull()
                         ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$4.99 / mo"
@@ -153,9 +158,9 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
                 .build()
         )
         val inAppParams = QueryProductDetailsParams.newBuilder().setProductList(inAppProductList).build()
-        client.queryProductDetailsAsync(inAppParams) { billingResult, productDetailsList ->
+        client.queryProductDetailsAsync(inAppParams) { billingResult, queryProductDetailsResult ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                val details = productDetailsList.firstOrNull()
+                val details = queryProductDetailsResult.productDetailsList.firstOrNull()
                 if (details != null) {
                     val price = details.oneTimePurchaseOfferDetails?.formattedPrice ?: "$0.99"
                     _uiState.value = _uiState.value.copy(
